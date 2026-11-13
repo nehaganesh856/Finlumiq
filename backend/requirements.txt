@@ -4,3 +4,4 @@ mysql-connector-python>=8.0.0
 python-dotenv>=1.0.0
 werkzeug>=2.3.0
 gunicorn
+google_auth
