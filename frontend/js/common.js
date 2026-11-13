@@ -24,10 +24,12 @@ async function request(path, options = {}) {
     throw err;
   }
   if (!response.ok) {
-    const err = new Error((body && body.error) || "Request failed (" + response.status + ")");
+    const err = new Error(
+        (body && body.error) || "Request failed (" + response.status + ")"
+    );
     err.status = response.status;
     throw err;
-  }
+}
   return body;
 } 
 

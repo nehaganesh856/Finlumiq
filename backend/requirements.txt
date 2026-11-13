@@ -6,3 +6,4 @@ werkzeug>=2.3.0
 gunicorn
 google_auth
 requests
+google-genai
