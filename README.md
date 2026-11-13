@@ -1,7 +1,7 @@
-# Personal Expense Tracker
 
-A full-stack web app to record daily expenses, see where the money goes, and stay within a monthly budget. Each user has a private account.
+# Finlumiq
 
+AI-powered student financial management platform that helps students track expenses, manage budgets, monitor college fees, set savings goals, and make smarter financial decisions.
 ## Features
 
 - Register, log in and log out (passwords are hashed, never stored as plain text)
@@ -76,3 +76,7 @@ Open `http://127.0.0.1:8000` (use `127.0.0.1`, not `localhost`).
 ## Limitations
 
 This is a learning project for local use. A public deployment would also need HTTPS, secure cookies, rate limiting on login, password reset, and a production server instead of Flask's debug server.
+
+# Finlumiq
+AI-powered student financial management platform
+
