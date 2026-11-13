@@ -47,6 +47,162 @@
   .empty-inline{font-size:.86rem;color:var(--muted);padding:8px 0}
   .data-label{font-size:.78rem;color:var(--muted)}
   .negative-text{color:var(--danger,#dc2626)}
+
+/* Expense Calendar */
+.exp-calendar-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(240px, .8fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.exp-calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.exp-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 15px;
+}
+
+.exp-calendar-weekday {
+  text-align: center;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 700;
+  padding: 8px 2px;
+}
+
+.exp-calendar-day {
+  min-width: 0;
+  min-height: 76px;
+  padding: 7px 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+  text-align: center;
+  transition: .15s;
+}
+
+.exp-calendar-day:hover {
+  border-color: var(--primary);
+}
+
+.exp-calendar-day.selected {
+  border: 2px solid var(--primary);
+  background: rgba(99,102,241,.10);
+}
+
+.exp-calendar-day.today .day-number {
+  color: var(--primary);
+  font-weight: 900;
+}
+
+.exp-calendar-day .day-number {
+  display: block;
+  font-weight: 700;
+  font-size: .9rem;
+}
+
+.exp-calendar-day .day-amount {
+  display: block;
+  margin-top: 7px;
+  font-size: .68rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.exp-calendar-day.has-expenses .day-amount {
+  color: var(--primary);
+  font-weight: 750;
+}
+
+.exp-calendar-empty {
+  min-height: 76px;
+}
+
+.exp-calendar-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.exp-calendar-summary > div {
+  padding: 12px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.exp-calendar-summary-label {
+  color: var(--muted);
+  font-size: .75rem;
+}
+
+.exp-calendar-summary-value {
+  font-size: 1.05rem;
+  font-weight: 800;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+
+.exp-calendar-record {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+  padding: 12px 0;
+}
+
+.exp-calendar-record:last-child {
+  border-bottom: 0;
+}
+
+.exp-calendar-record-title {
+  font-weight: 700;
+  font-size: .86rem;
+}
+
+.exp-calendar-record-sub {
+  color: var(--muted);
+  font-size: .76rem;
+  margin-top: 4px;
+}
+
+.exp-calendar-record-amount {
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+@media(max-width:750px) {
+  .exp-calendar-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media(max-width:480px) {
+  .exp-calendar-grid {
+    gap: 3px;
+  }
+
+  .exp-calendar-day {
+    min-height: 57px;
+    padding: 5px 1px;
+  }
+
+  .exp-calendar-day .day-amount {
+    font-size: .58rem;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -130,6 +286,100 @@
     <div class="glance-grid" id="glanceGrid"><div class="loading-state"><div class="spinner"></div><span>Loading dashboard data…</span></div></div>
   </section>
 
+<!-- NEW: Interactive Expense Calendar -->
+<section class="card mb-24" id="expenseCalendarCard">
+
+  <div class="dashboard-section-head">
+    <div>
+      <div class="section-title">📅 Expense Calendar</div>
+      <p class="data-label">
+        Select any date to see your daily spending and transactions.
+      </p>
+    </div>
+
+    <div class="exp-calendar-nav">
+      <button type="button" class="btn btn-sm btn-secondary"
+              id="expenseCalendarPrev" aria-label="Previous month">
+        ❮
+      </button>
+      <button type="button" class="btn btn-sm btn-secondary"
+              id="expenseCalendarToday">
+        Today
+      </button>
+      <button type="button" class="btn btn-sm btn-secondary"
+              id="expenseCalendarNext" aria-label="Next month">
+        ❯
+      </button>
+    </div>
+  </div>
+
+  <div class="exp-calendar-layout">
+
+    <div>
+      <h3 id="expenseCalendarMonth"
+          style="font-size:1.1rem;margin:12px 0">
+        Loading calendar...
+      </h3>
+
+      <div class="exp-calendar-grid" id="expenseCalendarGrid">
+        <div class="empty-inline">Loading expenses...</div>
+      </div>
+
+      <div class="exp-calendar-summary">
+        <div>
+          <div class="exp-calendar-summary-label">
+            Monthly spending
+          </div>
+          <div class="exp-calendar-summary-value"
+               id="calendarMonthlyTotal">₹0</div>
+        </div>
+
+        <div>
+          <div class="exp-calendar-summary-label">
+            Transactions this month
+          </div>
+          <div class="exp-calendar-summary-value"
+               id="calendarMonthlyCount">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title" id="calendarSelectedDate">
+        Selected date
+      </div>
+
+      <div class="exp-calendar-summary">
+        <div>
+          <div class="exp-calendar-summary-label">
+            Daily spending
+          </div>
+          <div class="exp-calendar-summary-value"
+               id="calendarDailyTotal">₹0</div>
+        </div>
+
+        <div>
+          <div class="exp-calendar-summary-label">
+            Transactions
+          </div>
+          <div class="exp-calendar-summary-value"
+               id="calendarDailyCount">0</div>
+        </div>
+      </div>
+
+      <div id="calendarDailyExpenses" style="margin-top:12px"
+           aria-live="polite">
+        <div class="empty-inline">
+          Select a date to view your expenses.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+<!-- END: Interactive Expense Calendar -->
+
+
   <!-- Quick add expense (existing functionality retained) -->
   <section class="card mb-24">
     <div class="dashboard-section-head"><div class="section-title">⚡ Quick Add Expense</div><a href="expenses.html" class="btn btn-sm btn-secondary">Full expense manager →</a></div>
@@ -206,6 +456,16 @@
   const charts = { group: null, trend: null };
   let categories = [];
   let dashboardData = null;
+
+// Expense Calendar State
+let calendarMonth = new Date(
+  new Date().getFullYear(),
+  new Date().getMonth(),
+  1
+);
+
+let selectedCalendarDate = localTodayISO();
+
 
   const currentMonthKey = () => {
     const d = new Date();
@@ -429,8 +689,204 @@
     renderGoals(data.goals);
     renderRecentExpenses([...expenses].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5));
     renderRecentIncome([...income].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5));
+    renderExpenseCalendar(expenses);
     renderCharts();
   }
+
+// ==============================================
+// INTERACTIVE EXPENSE CALENDAR
+// Uses existing dashboard expense records.
+// No additional API requests.
+// ==============================================
+
+function calendarDateKey(year, month, day) {
+  return (
+    year + "-" +
+    String(month + 1).padStart(2, "0") + "-" +
+    String(day).padStart(2, "0")
+  );
+}
+
+function renderExpenseCalendar(records) {
+  records = Array.isArray(records) ? records : [];
+
+  const year = calendarMonth.getFullYear();
+  const month = calendarMonth.getMonth();
+  const monthKey = year + "-" + String(month + 1).padStart(2, "0");
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const totalDays = new Date(year, month + 1, 0).getDate();
+
+  const monthRecords = records.filter(
+    expense => expense.date && expense.date.slice(0, 7) === monthKey
+  );
+
+  const monthlyTotal = amountSum(monthRecords, "amount");
+
+  $("expenseCalendarMonth").textContent =
+    calendarMonth.toLocaleDateString("en-IN", {
+      month: "long",
+      year: "numeric"
+    });
+
+  $("calendarMonthlyTotal").textContent =
+    safeMoney(monthlyTotal);
+
+  $("calendarMonthlyCount").textContent =
+    monthRecords.length.toLocaleString("en-IN");
+
+  const dailyTotals = new Map();
+
+  monthRecords.forEach(expense => {
+    const date = expense.date;
+    const existing = dailyTotals.get(date) || {
+      total: 0,
+      count: 0
+    };
+
+    existing.total += numeric(expense.amount);
+    existing.count += 1;
+
+    dailyTotals.set(date, existing);
+  });
+
+  let html = "";
+
+  ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+    .forEach(day => {
+      html += `<div class="exp-calendar-weekday">${day}</div>`;
+    });
+
+  for (let i = 0; i < firstDay; i++) {
+    html += `<div class="exp-calendar-empty"></div>`;
+  }
+
+  for (let day = 1; day <= totalDays; day++) {
+    const dateKey = calendarDateKey(year, month, day);
+    const data = dailyTotals.get(dateKey);
+
+    const isSelected = selectedCalendarDate === dateKey;
+    const isToday = localTodayISO() === dateKey;
+
+    const classes = [
+      "exp-calendar-day",
+      data ? "has-expenses" : "",
+      isSelected ? "selected" : "",
+      isToday ? "today" : ""
+    ].filter(Boolean).join(" ");
+
+    const amountLabel = data
+      ? "₹" + data.total.toLocaleString("en-IN", {
+          maximumFractionDigits: 0
+        })
+      : "";
+
+    html += `
+      <button type="button"
+              class="${classes}"
+              data-calendar-date="${dateKey}"
+              aria-pressed="${isSelected}"
+              aria-label="${dateKey}, ${data ? data.count + " expenses, " + safeMoney(data.total) : "No expenses"}">
+
+        <span class="day-number">${day}</span>
+
+        <span class="day-amount">${amountLabel}</span>
+
+      </button>
+    `;
+  }
+
+  $("expenseCalendarGrid").innerHTML = html;
+
+  renderSelectedCalendarDay(records);
+}
+
+function renderSelectedCalendarDay(records) {
+  const selected = records.filter(
+    expense => expense.date === selectedCalendarDate
+  );
+
+  const total = amountSum(selected, "amount");
+
+  $("calendarSelectedDate").textContent = niceDate(
+    selectedCalendarDate
+  );
+
+  $("calendarDailyTotal").textContent = safeMoney(total);
+
+  $("calendarDailyCount").textContent =
+    selected.length.toLocaleString("en-IN");
+
+  if (!selected.length) {
+    $("calendarDailyExpenses").innerHTML = `
+      <div class="empty-inline">
+        No expenses recorded on this date.
+      </div>
+    `;
+    return;
+  }
+
+  $("calendarDailyExpenses").innerHTML = selected.map(expense => `
+    <div class="exp-calendar-record">
+
+      <div style="min-width:0">
+        <div class="exp-calendar-record-title">
+          ${esc(expense.icon || "💳")} ${esc(expense.title)}
+        </div>
+
+        <div class="exp-calendar-record-sub">
+          ${esc(expense.category || expense.group || "Other")}
+        </div>
+      </div>
+
+      <div class="exp-calendar-record-amount">
+        ${safeMoney(expense.amount)}
+      </div>
+
+    </div>
+  `).join("");
+}
+
+function moveExpenseCalendar(direction) {
+  const year = calendarMonth.getFullYear();
+  const month = calendarMonth.getMonth();
+
+  const newMonth = new Date(year, month + direction, 1);
+  const newYear = newMonth.getFullYear();
+  const newMonthNumber = newMonth.getMonth();
+
+  const lastDay = new Date(
+    newYear,
+    newMonthNumber + 1,
+    0
+  ).getDate();
+
+  const oldDay = Number(selectedCalendarDate.slice(-2)) || 1;
+  const newDay = Math.min(oldDay, lastDay);
+
+  calendarMonth = newMonth;
+
+  selectedCalendarDate = calendarDateKey(
+    newYear,
+    newMonthNumber,
+    newDay
+  );
+
+  renderExpenseCalendar(dashboardData?.expenses || []);
+}
+
+function resetExpenseCalendarToday() {
+  calendarMonth = new Date(
+    new Date().getFullYear(),
+    new Date().getMonth(),
+    1
+  );
+
+  selectedCalendarDate = localTodayISO();
+
+  renderExpenseCalendar(dashboardData?.expenses || []);
+}
+
 
   function renderBudget(budget, spent, groupBudgets, monthExpenses) {
     const left = budget - spent;
@@ -462,7 +918,7 @@
     $('groupBudgets').innerHTML = limits.length ? '<div style="margin-top:16px;font-weight:700;font-size:.9rem">Category limits</div>' + limits.map(([group,limit]) => {
       const used = byGroup[group] || 0; const p = used / numeric(limit) * 100;
       return '<div class="gb-row"><div class="gb-head"><span>' + esc(group) + '</span><span>' + safeMoney(used) + ' / ' + safeMoney(limit) + ' · <strong>' + (used >= numeric(limit) ? '100% used' : safeMoney(numeric(limit)-used) + ' left') + '</strong></span></div><div class="progress-track progress-sm"><div class="progress-fill ' + barClass(p) + '" style="width:' + Math.min(Math.max(p,0),100) + '%"></div></div></div>';
-    }).join('') : '<div class="empty-inline">No category limits yet. <a href="budgets.html" class="text-primary">Set category budgets →</a></div>';
+    }).join('') : '<div class="empty-inline">No category limits yet. <a href="/pages/budgets.html" class="text-primary">Set category budgets →</a></div>';
   }
 
   function renderAlerts(reminders) {
@@ -587,6 +1043,29 @@
       if(typeof buildNav==='function') buildNav('dashboard',user);
       setDateLabels();
       $('quickAddForm').addEventListener('submit',submitQuickExpense);
+      // Expense Calendar Event Listeners
+
+$("expenseCalendarPrev").addEventListener("click", () => {
+  moveExpenseCalendar(-1);
+});
+
+$("expenseCalendarNext").addEventListener("click", () => {
+  moveExpenseCalendar(1);
+});
+
+$("expenseCalendarToday").addEventListener("click", () => {
+  resetExpenseCalendarToday();
+});
+
+$("expenseCalendarGrid").addEventListener("click", event => {
+  const button = event.target.closest("[data-calendar-date]");
+
+  if (!button) return;
+
+  selectedCalendarDate = button.dataset.calendarDate;
+
+  renderExpenseCalendar(dashboardData?.expenses || []);
+});
       await Promise.all([loadCategories(),loadAll()]);
     } catch(error) {
       console.error('Dashboard startup failed:',error);
