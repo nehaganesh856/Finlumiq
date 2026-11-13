@@ -18,10 +18,22 @@
   <p>Redirecting to Finlumiq…</p>
 </div>
 <script>
-  // Check if already logged in; if so go to dashboard, else login page
-  fetch('http://127.0.0.1:5000/api/auth/me', {credentials:'include'})
-    .then(r => { location.replace(r.ok ? 'dashboard.html' : 'login.html'); })
-    .catch(() => { location.replace('login.html'); });
+  
+const API_BASE = (
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1"
+)
+  ? "http://127.0.0.1:5000/api"
+  : "https://finlumiq-2.onrender.com/api";
+
+fetch(`${API_BASE}/auth/me`, { credentials: "include" })
+  .then(r => {
+    location.replace(r.ok ? "dashboard.html" : "login.html");
+  })
+  .catch(() => {
+    location.replace("login.html");
+  });
+
 </script>
 </body>
 </html>

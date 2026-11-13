@@ -1,6 +1,12 @@
 // auth-shared.js — Shared utilities for all Finlumiq auth pages
 
-const API = "http://127.0.0.1:5000/api";
+
+const API = (
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1"
+)
+  ? "http://127.0.0.1:5000/api"
+  : "https://finlumiq-2.onrender.com/api";
 
 // ----------------------------------------------------------------
 // Theme

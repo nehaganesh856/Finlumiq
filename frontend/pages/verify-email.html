@@ -94,7 +94,14 @@
       show("loadingState");
       try {
         // Redirect to backend which will redirect back here with ?status=
-        location.href = `http://127.0.0.1:5000/api/auth/verify-email?token=${encodeURIComponent(token)}`;
+        const API_BASE = (
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1"
+)
+  ? "http://127.0.0.1:5000/api"
+  : "https://finlumiq-2.onrender.com/api";
+
+location.href = `${API_BASE}/auth/verify-email?token=${encodeURIComponent(token)}`;
       } catch {
         show("errorState");
       }
