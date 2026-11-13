@@ -1,0 +1,195 @@
+Select-String -Path .\name_based_split.py -Pattern "expense_group_people|split_groups_v2"<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Income — Finlumiq</title>
+<link rel="stylesheet" href="css/app.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div id="appNav"></div>
+<header class="topbar">
+  <a class="topbar-brand" href="dashboard.html"><div class="topbar-logo">🎓</div><span class="topbar-title">Finlumiq</span></a>
+  <div class="topbar-right">
+    <span class="topbar-page-title">Income</span>
+    <button class="theme-toggle-btn">🌙</button>
+    <button id="navOpenBtn" class="nav-open-btn">☰</button>
+  </div>
+</header>
+<main class="page-wrap">
+  <div class="page-header">
+    <div class="page-header-left"><h1>💰 Income</h1><p>All your income sources in one place.</p></div>
+    <button class="btn btn-primary" id="addIncomeBtn">+ Add Income</button>
+  </div>
+
+  <div class="stat-cards">
+    <div class="stat-card success"><div class="stat-label">Total Income</div><div class="stat-icon">💰</div><div class="stat-value" id="sTotal">₹0</div></div>
+    <div class="stat-card"><div class="stat-label">This Month</div><div class="stat-icon">📅</div><div class="stat-value" id="sMonth">₹0</div></div>
+    <div class="stat-card info"><div class="stat-label">This Year</div><div class="stat-icon">📆</div><div class="stat-value" id="sYear">₹0</div></div>
+    <div class="stat-card warning"><div class="stat-label">Entries</div><div class="stat-icon">🔢</div><div class="stat-value" id="sCount">0</div></div>
+  </div>
+
+  <div class="card mb-24">
+    <div class="filter-bar" style="margin-bottom:0;">
+      <div class="form-group"><label class="form-label">Source</label>
+        <select id="srcFilter" class="form-control" style="width:180px;">
+          <option value="">All Sources</option>
+          <option>Pocket Money</option><option>Scholarship</option>
+          <option>Part-time Job</option><option>Gift</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:1;"><label class="form-label">Search</label>
+        <div class="search-input-wrap"><span class="search-icon">🔍</span>
+          <input id="searchFilter" type="search" class="form-control" placeholder="Search…">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-24">
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Source</th><th>Date</th><th style="text-align:right;">Amount</th><th>Actions</th></tr></thead>
+        <tbody id="incomeTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="card"><div class="section-title">📊 Income by Source</div><div class="chart-wrap"><canvas id="srcChart"></canvas></div></div>
+    <div class="card">
+      <div class="section-title">📋 Source Breakdown</div>
+      <div id="srcBreakdown"></div>
+    </div>
+  </div>
+</main>
+
+<!-- Add Modal -->
+<div id="incModal" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Add Income</span><button class="modal-close" id="incModalClose">✕</button></div>
+    <div class="modal-body">
+      <form id="incForm" novalidate>
+        <div class="form-grid" style="gap:14px;">
+          <div class="form-group"><label class="form-label">Amount (₹) *</label><input id="incAmount" type="number" class="form-control" placeholder="0.00" min="0.01" step="0.01" required></div>
+          <div class="form-group"><label class="form-label">Source *</label>
+            <select id="incSource" class="form-control" required>
+              <option value="">Select source…</option>
+              <option>Pocket Money</option><option>Scholarship</option>
+              <option>Part-time Job</option><option>Gift</option><option>Other</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Date *</label><input id="incDate" type="date" class="form-control" required></div>
+        </div>
+        <div id="incErr" class="auth-message error mt-8" hidden></div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="incCancelBtn">Cancel</button>
+      <button class="btn btn-primary" id="incSaveBtn">Add Income</button>
+    </div>
+  </div>
+</div>
+
+<div id="confirmModal" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal"><div class="modal-body" style="text-align:center;padding:32px 24px;"><div style="font-size:3rem;margin-bottom:16px;">🗑️</div><div id="confirmTitle" style="font-size:1.1rem;font-weight:700;margin-bottom:8px;"></div><div id="confirmBody" style="color:var(--muted);"></div></div>
+  <div class="modal-footer"><button id="confirmNo" class="btn btn-secondary">Cancel</button><button id="confirmYes" class="btn btn-danger">Delete</button></div></div>
+</div>
+
+<script src="js/common.js"></script>
+<script src="js/nav.js"></script>
+<script>
+initTheme();
+const SOURCE_ICONS={'Pocket Money':'💵','Scholarship':'🎓','Part-time Job':'💼','Gift':'🎁','Other':'📦'};
+let allIncome=[], chartI=null;
+
+async function init(){
+  const user=await requireAuth(); buildNav('income',user);
+  document.getElementById('incDate').value=todayISO();
+  await loadIncome();
+}
+
+async function loadIncome(){
+  try{
+    allIncome=await API_CLIENT.get('/income');
+    render(); renderStats(); renderChart();
+  }catch(e){showToast(e.message,'error');}
+}
+
+function getFiltered(){
+  const src=document.getElementById('srcFilter').value;
+  const q=document.getElementById('searchFilter').value.toLowerCase();
+  return allIncome.filter(i=>(!src||i.source===src)&&(!q||i.source.toLowerCase().includes(q)));
+}
+
+function render(){
+  const data=getFiltered();
+  const tbody=document.getElementById('incomeTbody');
+  if(!data.length){tbody.innerHTML=`<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">💰</div><h3>No income entries</h3></div></td></tr>`;return;}
+  tbody.innerHTML=data.map(i=>`<tr>
+    <td><span style="font-size:1.1rem;">${SOURCE_ICONS[i.source]||'💰'}</span> <span class="badge badge-success">${escapeHtml(i.source)}</span></td>
+    <td class="text-muted">${formatDate(i.date)}</td>
+    <td style="text-align:right;" class="fw-bold text-success">${money(i.amount)}</td>
+    <td><button class="btn btn-sm btn-danger" onclick="deleteInc(${i.id},'${escapeHtml(i.source)}')">🗑️</button></td>
+  </tr>`).join('');
+}
+
+function renderStats(){
+  const data=getFiltered();
+  const now=new Date(),curMonth=now.toISOString().slice(0,7),curYear=now.getFullYear().toString();
+  document.getElementById('sTotal').textContent=money(data.reduce((s,i)=>s+i.amount,0));
+  document.getElementById('sMonth').textContent=money(data.filter(i=>i.date.startsWith(curMonth)).reduce((s,i)=>s+i.amount,0));
+  document.getElementById('sYear').textContent=money(data.filter(i=>i.date.startsWith(curYear)).reduce((s,i)=>s+i.amount,0));
+  document.getElementById('sCount').textContent=data.length;
+  // breakdown
+  const bySource={};
+  data.forEach(i=>{ bySource[i.source]=(bySource[i.source]||0)+i.amount; });
+  const total=data.reduce((s,i)=>s+i.amount,0);
+  document.getElementById('srcBreakdown').innerHTML=Object.entries(bySource).map(([src,amt])=>`
+    <div class="d-flex align-center gap-8 mb-8">
+      <span>${SOURCE_ICONS[src]||'📦'}</span>
+      <span style="flex:1;font-size:0.88rem;">${src}</span>
+      <span class="fw-bold">${money(amt)}</span>
+      <span class="text-muted" style="font-size:0.78rem;">${total?((amt/total*100).toFixed(0))+'%':''}</span>
+    </div>`).join('')||'<div class="text-muted">No data</div>';
+}
+
+function renderChart(){
+  const data=getFiltered();
+  const bySource={};
+  data.forEach(i=>{ bySource[i.source]=(bySource[i.source]||0)+i.amount; });
+  const labels=Object.keys(bySource),vals=labels.map(l=>bySource[l]);
+  const colors=['#6366f1','#22c55e','#f59e0b','#06b6d4','#8b5cf6'];
+  const ctx=document.getElementById('srcChart').getContext('2d');
+  if(chartI) chartI.destroy();
+  if(!labels.length) return;
+  chartI=new Chart(ctx,{type:'doughnut',data:{labels,datasets:[{data:vals,backgroundColor:colors.slice(0,labels.length),borderWidth:2,borderColor:'var(--surface)'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{padding:8,font:{size:11},color:'#64748b'}}}}});
+}
+
+document.getElementById('addIncomeBtn').addEventListener('click',()=>{document.getElementById('incForm').reset();document.getElementById('incDate').value=todayISO();document.getElementById('incErr').hidden=true;document.getElementById('incModal').classList.add('active');});
+['incModalClose','incCancelBtn'].forEach(id=>document.getElementById(id).addEventListener('click',()=>document.getElementById('incModal').classList.remove('active')));
+
+document.getElementById('incSaveBtn').addEventListener('click',async()=>{
+  const amount=parseFloat(document.getElementById('incAmount').value);
+  const source=document.getElementById('incSource').value;
+  const date=document.getElementById('incDate').value;
+  const errEl=document.getElementById('incErr');
+  if(!amount||!source||!date){errEl.textContent='Please fill all fields.';errEl.hidden=false;return;}
+  const btn=document.getElementById('incSaveBtn');btn.disabled=true;btn.textContent='Adding…';
+  try{await API_CLIENT.post('/income',{amount,source,date});showToast('Income added!','success');document.getElementById('incModal').classList.remove('active');loadIncome();}
+  catch(e){errEl.textContent=e.message;errEl.hidden=false;}
+  finally{btn.disabled=false;btn.textContent='Add Income';}
+});
+
+async function deleteInc(id,name){
+  const ok=await confirm2('Delete this '+name+' income entry?','Delete Income');
+  if(!ok)return;
+  try{await API_CLIENT.del('/income/'+id);showToast('Deleted.','success');loadIncome();}
+  catch(e){showToast(e.message,'error');}
+}
+
+['srcFilter','searchFilter'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{render();renderStats();renderChart();}));
+init();
+</script>
+</body>
+</html>

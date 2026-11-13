@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#4338ca">
+  <meta name="description" content="Set up Finlumiq mobile notifications on your Android phone.">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <title>Mobile Notifications — Finlumiq</title>
+  <style>
+    :root{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:#172033;background:#f5f7fb;font-synthesis:none}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(145deg,#eef2ff 0%,#f8fafc 45%,#f1f5f9 100%)}
+    a{color:#4338ca;text-decoration:none}.top{height:68px;background:#fff;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;padding:0 max(20px,calc((100% - 1080px)/2));gap:16px}
+    .brand{display:flex;align-items:center;gap:11px;color:#111827;font-weight:800}.logo{width:38px;height:38px;border-radius:12px;background:#4338ca;color:#fff;display:grid;place-items:center;font-size:21px}.back{font-size:14px;font-weight:650}
+    main{width:min(960px,calc(100% - 32px));margin:42px auto 64px}.eyebrow{color:#4f46e5;font-weight:800;text-transform:uppercase;letter-spacing:.08em;font-size:12px}.hero h1{margin:8px 0;font-size:clamp(28px,5vw,40px);letter-spacing:-.04em}.hero p{color:#64748b;line-height:1.65;max-width:700px;margin:0}
+    .layout{display:grid;grid-template-columns:1.2fr .8fr;gap:20px;margin-top:26px}.card{background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:22px;box-shadow:0 10px 30px rgba(15,23,42,.045)}
+    h2{font-size:18px;margin:0 0 8px}.muted{color:#64748b;font-size:13px;line-height:1.6}.status-list{display:grid;gap:10px;margin:18px 0}.status{display:flex;justify-content:space-between;align-items:center;gap:14px;border:1px solid #e5e7eb;border-radius:12px;padding:12px 14px;font-size:14px}.status strong{font-size:12px;color:#64748b;text-align:right}.pill{border-radius:999px;padding:4px 9px;font-size:11px;font-weight:800}.ok{background:#dcfce7;color:#166534}.warn{background:#fef3c7;color:#92400e}.bad{background:#fee2e2;color:#991b1b}
+    .btn{width:100%;display:flex;align-items:center;justify-content:center;gap:9px;border:0;border-radius:12px;padding:13px 16px;font-size:14px;font-weight:750;cursor:pointer;margin-top:10px;min-height:46px}.primary{background:#4338ca;color:white}.secondary{background:#eef2ff;color:#3730a3}.btn:disabled{opacity:.48;cursor:not-allowed}.message{display:none;margin-top:14px;padding:12px 14px;border-radius:12px;font-size:13px;line-height:1.5}.message.show{display:block}.message.success{background:#ecfdf5;color:#065f46}.message.error{background:#fef2f2;color:#991b1b}.message.info{background:#eff6ff;color:#1e40af}
+    .steps{display:grid;gap:15px;margin-top:18px}.step{display:flex;gap:12px;align-items:flex-start}.num{flex:0 0 27px;height:27px;border-radius:9px;background:#eef2ff;color:#4338ca;display:grid;place-items:center;font-weight:800;font-size:13px}.step b{font-size:14px}.step p{margin:4px 0 0;color:#64748b;font-size:12px;line-height:1.55}.notice{margin-top:20px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:14px;border-radius:14px;font-size:12px;line-height:1.6}.small{font-size:12px;color:#64748b;margin-top:12px}
+    @media(max-width:760px){.layout{grid-template-columns:1fr}.top{padding:0 16px}main{margin-top:28px}.card{padding:18px}}
+  </style>
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="./dashboard.html"><span class="logo">🎓</span><span>Finlumiq</span></a>
+    <a class="back" href="./dashboard.html">← Dashboard</a>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="eyebrow">Mobile notification setup · Phase 1</div>
+      <h1>Stay updated wherever you are.</h1>
+      <p>Enable notifications on your Android phone and send a test alert. Fee reminders, budget warnings, scholarship deadlines and other automatic financial alerts will be connected in Phase 2.</p>
+    </section>
+
+    <div class="layout">
+      <section class="card">
+        <h2>Notification status</h2>
+        <p class="muted">Check your browser support and notification permission for this Finlumiq website.</p>
+        <div class="status-list" aria-live="polite">
+          <div class="status"><span>Secure connection</span><strong id="secureStatus">Checking…</strong></div>
+          <div class="status"><span>Browser notifications</span><strong id="supportStatus">Checking…</strong></div>
+          <div class="status"><span>Service worker</span><strong id="workerStatus">Checking…</strong></div>
+          <div class="status"><span>Permission</span><strong id="permissionStatus">Checking…</strong></div>
+          <div class="status"><span>App installation</span><strong id="installStatus">Check Chrome menu</strong></div>
+        </div>
+
+        <button class="btn primary" id="enableBtn" type="button">🔔 Enable notifications & send test</button>
+        <button class="btn secondary" id="testBtn" type="button" disabled>Send another test notification</button>
+        <button class="btn secondary" id="installBtn" type="button">＋ Install Finlumiq</button>
+        <div class="message" id="message" role="status" aria-live="polite"></div>
+        <p class="small">Permission is requested only after you press the enable button. Finlumiq will not ask on every page load.</p>
+      </section>
+
+      <aside class="card">
+        <h2>Set up on Android</h2>
+        <p class="muted">Use Chrome on your phone for the simplest installation flow.</p>
+        <div class="steps">
+          <div class="step"><span class="num">1</span><div><b>Open Finlumiq over HTTPS</b><p>Open your deployed Finlumiq website in Chrome on your Android phone.</p></div></div>
+          <div class="step"><span class="num">2</span><div><b>Enable notifications</b><p>Tap “Enable notifications & send test” and choose Allow when Chrome asks.</p></div></div>
+          <div class="step"><span class="num">3</span><div><b>Install the app (recommended)</b><p>Open Chrome’s ⋮ menu and choose “Install app” or “Add to Home screen” if shown.</p></div></div>
+          <div class="step"><span class="num">4</span><div><b>Confirm the test alert</b><p>You should receive an Finlumiq test notification in your Android notification shade.</p></div></div>
+        </div>
+        <div class="notice"><b>Development URL warning:</b> <code>127.0.0.1</code> on your computer refers to that computer, not your phone. For phone testing, deploy the site to HTTPS. A plain LAN address such as <code>http://192.168.x.x</code> is not a secure origin for these features.</div>
+      </aside>
+    </div>
+  </main>
+
+  <script src="./js/push-notifications.js" defer></script>
+  <script>
+    (function () {
+      'use strict';
+      const $ = (id) => document.getElementById(id);
+      let deferredInstallPrompt = null;
+
+      function setMessage(text, kind) {
+        const box = $('message');
+        box.textContent = text;
+        box.className = 'message show ' + (kind || 'info');
+      }
+
+      function badge(text, kind) {
+        return '<span class="pill ' + kind + '">' + text + '</span>';
+      }
+
+      async function refreshStatus() {
+        const api = window.FinlumiqPush;
+        if (!api) {
+          $('secureStatus').innerHTML = badge('Helper not loaded', 'bad');
+          $('supportStatus').innerHTML = badge('Unavailable', 'bad');
+          return;
+        }
+
+        const status = api.getStatus();
+        $('secureStatus').innerHTML = status.secure ? badge('Secure', 'ok') : badge('HTTPS required', 'bad');
+        $('supportStatus').innerHTML = status.notificationSupported ? badge('Supported', 'ok') : badge('Not supported', 'bad');
+        $('permissionStatus').innerHTML = status.permission === 'granted'
+          ? badge('Allowed', 'ok')
+          : status.permission === 'denied'
+            ? badge('Blocked in browser', 'bad')
+            : status.permission === 'default'
+              ? badge('Not requested', 'warn')
+              : badge('Unavailable', 'bad');
+
+        try {
+          if (status.serviceWorkerSupported && status.secure) {
+            await api.registerServiceWorker();
+            $('workerStatus').innerHTML = badge('Registered', 'ok');
+          } else {
+            $('workerStatus').innerHTML = badge('Unavailable', 'bad');
+          }
+        } catch (error) {
+          $('workerStatus').innerHTML = badge('Registration failed', 'bad');
+          console.error('[Finlumiq] Service worker status:', error);
+        }
+
+        $('enableBtn').disabled = !status.secure || !status.notificationSupported || status.permission === 'denied';
+        $('testBtn').disabled = status.permission !== 'granted';
+      }
+
+      $('enableBtn').addEventListener('click', async function () {
+        $('enableBtn').disabled = true;
+        setMessage('Requesting permission and preparing your test notification…', 'info');
+        try {
+          await window.FinlumiqPush.requestPermissionAndTest();
+          setMessage('Success! A test notification has been sent. Check your Android notification shade.', 'success');
+        } catch (error) {
+          setMessage(error.message || 'Could not enable notifications.', 'error');
+        } finally {
+          await refreshStatus();
+        }
+      });
+
+      $('testBtn').addEventListener('click', async function () {
+        $('testBtn').disabled = true;
+        try {
+          await window.FinlumiqPush.sendTestNotification();
+          setMessage('Test notification sent. Check your device notification shade.', 'success');
+        } catch (error) {
+          setMessage(error.message || 'Could not send the test notification.', 'error');
+        } finally {
+          await refreshStatus();
+        }
+      });
+
+      window.addEventListener('beforeinstallprompt', function (event) {
+        event.preventDefault();
+        deferredInstallPrompt = event;
+        $('installStatus').innerHTML = badge('Ready to install', 'ok');
+      });
+
+      window.addEventListener('appinstalled', function () {
+        deferredInstallPrompt = null;
+        $('installStatus').innerHTML = badge('Installed', 'ok');
+        setMessage('Finlumiq has been installed on this device.', 'success');
+      });
+
+      $('installBtn').addEventListener('click', async function () {
+        if (!deferredInstallPrompt) {
+          setMessage('If Chrome has not shown an install prompt, open Chrome’s ⋮ menu and choose “Install app” or “Add to Home screen”.', 'info');
+          return;
+        }
+        deferredInstallPrompt.prompt();
+        await deferredInstallPrompt.userChoice;
+        deferredInstallPrompt = null;
+      });
+
+      window.addEventListener('load', function () {
+        // push-notifications.js is deferred; allow it to initialize before refreshing status.
+        refreshStatus();
+      }, { once: true });
+    })();
+  </script>
+</body>
+</html>

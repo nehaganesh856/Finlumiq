@@ -1,0 +1,885 @@
+
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Sign In — Finlumiq</title>
+
+<meta name="description" content="Sign in to Finlumiq — your smart student expense tracker.">
+
+<link rel="stylesheet" href="css/auth.css">
+
+<!-- Google Identity Services -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<style>
+.google-signin-wrap {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    min-height: 44px;
+    margin: 12px 0;
+}
+
+.google-link-box {
+    background: var(--surface, #ffffff);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 14px 0;
+}
+
+.google-link-box[hidden] {
+    display: none !important;
+}
+
+.google-link-box h3 {
+    margin: 0 0 8px;
+    font-size: 1rem;
+}
+
+.google-link-box p {
+    font-size: 0.88rem;
+    color: var(--muted, #64748b);
+    margin: 0 0 12px;
+    line-height: 1.5;
+}
+
+.google-link-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.google-link-actions button {
+    flex: 1;
+    cursor: pointer;
+}
+
+.google-link-note {
+    font-size: 0.75rem;
+    color: var(--muted, #64748b);
+    margin-top: 8px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="auth-bg">
+    <div class="blob-accent"></div>
+</div>
+
+<button class="theme-btn" id="themeBtn">
+    🌙 Dark
+</button>
+
+<div class="auth-page">
+
+    <div class="auth-split">
+
+        <!-- Hero Panel -->
+        <div class="auth-hero">
+
+            <div>
+
+                <div class="hero-brand">
+                    🎓 Finlumiq
+                </div>
+
+                <p class="hero-tagline">
+                    The smart way to manage your student finances —
+                    track expenses, fees, savings goals, and scholarships
+                    in one place.
+                </p>
+
+                <ul class="hero-features">
+
+                    <li>
+                        <span class="feat-icon">💸</span>
+                        Expense tracking with smart categories
+                    </li>
+
+                    <li>
+                        <span class="feat-icon">🏫</span>
+                        College fee management &amp; payment tracking
+                    </li>
+
+                    <li>
+                        <span class="feat-icon">🏦</span>
+                        Savings goals with progress rings
+                    </li>
+
+                    <li>
+                        <span class="feat-icon">🎓</span>
+                        Scholarship application tracker
+                    </li>
+
+                    <li>
+                        <span class="feat-icon">📊</span>
+                        Detailed financial reports &amp; analytics
+                    </li>
+
+                </ul>
+
+            </div>
+
+        </div>
+
+
+        <!-- Authentication Card -->
+        <div class="auth-card">
+
+            <a href="index.html" class="auth-logo">
+
+                <div class="auth-logo-icon">🎓</div>
+
+                <span class="auth-logo-text">
+                    Finlumiq
+                </span>
+
+            </a>
+
+            <h1 class="auth-title">
+                Welcome back
+            </h1>
+
+            <p class="auth-sub">
+                Sign in to manage your student finances.
+            </p>
+
+            <div id="alertBox"></div>
+
+
+            <!-- GOOGLE SIGN IN -->
+            <div class="google-signin-wrap">
+
+                <div id="googleSignInButton"></div>
+
+            </div>
+
+
+            <!-- EXISTING ACCOUNT LINKING -->
+            <div id="googleLinkBox" class="google-link-box" hidden>
+
+                <h3>Link your existing Finlumiq account</h3>
+
+                <p>
+                    An account already exists with this Google email.
+                    Enter your existing Finlumiq password once
+                    to securely link your Google account.
+                </p>
+
+                <div class="form-group">
+
+                    <label class="form-label" for="googleLinkPassword">
+                        Existing Finlumiq Password
+                    </label>
+
+                    <input
+                        id="googleLinkPassword"
+                        type="password"
+                        class="form-input"
+                        placeholder="Enter your existing password"
+                        autocomplete="current-password"
+                    >
+
+                </div>
+
+                <div class="google-link-actions">
+
+                    <button
+                        type="button"
+                        class="btn-primary"
+                        id="googleLinkBtn">
+                        Link &amp; Continue
+                    </button>
+
+                    <button
+                        type="button"
+                        class="btn-secondary"
+                        id="googleLinkCancel">
+                        Cancel
+                    </button>
+
+                </div>
+
+                <div class="google-link-note">
+                    Your existing expenses, budgets and other financial
+                    records will remain associated with your account.
+                </div>
+
+            </div>
+
+
+            <div class="auth-divider">
+                or sign in with email
+            </div>
+
+
+            <!-- EXISTING EMAIL/PASSWORD LOGIN -->
+            <form id="loginForm" novalidate>
+
+                <div class="form-group">
+
+                    <label class="form-label" for="loginEmail">
+                        Email Address
+                    </label>
+
+                    <div class="input-wrap">
+
+                        <span class="input-icon">✉️</span>
+
+                        <input
+                            id="loginEmail"
+                            type="email"
+                            class="form-input has-icon"
+                            placeholder="you@gmail.com"
+                            autocomplete="email"
+                            required
+                        >
+
+                    </div>
+
+                    <div class="field-error" id="loginEmailErr"></div>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label class="form-label" for="loginPassword">
+                        Password
+                    </label>
+
+                    <div class="input-wrap">
+
+                        <span class="input-icon">🔒</span>
+
+                        <input
+                            id="loginPassword"
+                            type="password"
+                            class="form-input has-icon has-toggle"
+                            placeholder="Your password"
+                            autocomplete="current-password"
+                            required
+                        >
+
+                        <button
+                            type="button"
+                            class="pw-toggle"
+                            id="loginPwToggle"
+                            title="Show password">
+                            👁️
+                        </button>
+
+                    </div>
+
+                    <div class="field-error" id="loginPwErr"></div>
+
+                </div>
+
+
+                <div class="auth-links">
+
+                    <label class="remember-row">
+
+                        <input type="checkbox" id="rememberMe">
+
+                        Remember me
+
+                    </label>
+
+                    <a href="forgot-password.html">
+                        Forgot password?
+                    </a>
+
+                </div>
+
+
+                <button
+                    type="submit"
+                    class="btn-primary"
+                    id="loginBtn">
+
+                    Sign In
+
+                </button>
+
+            </form>
+
+
+            <div class="auth-footer-link">
+
+                Don't have an account?
+
+                <a href="register.html">
+                    Create one free
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- Existing authentication utilities -->
+<script src="js/auth-shared.js"></script>
+
+
+<script>
+
+/* ============================================
+   GOOGLE CONFIGURATION
+============================================ */
+
+// IMPORTANT: Replace with your actual Google Client ID.
+const GOOGLE_CLIENT_ID =
+    "10575419495-ahcn2dttd279kurp8ihha1p6ujg84ifp.apps.googleusercontent.com";
+
+
+/* ============================================
+   INITIALIZATION
+============================================ */
+
+redirectIfLoggedIn();
+
+setupPasswordToggle(
+    "loginPassword",
+    "loginPwToggle"
+);
+
+// Holds the Google credential temporarily while
+// the existing account is being linked.
+let pendingGoogleCredential = null;
+
+
+/* ============================================
+   INITIALIZE GOOGLE SIGN IN
+============================================ */
+
+function initializeGoogleSignIn() {
+
+    if (
+        !GOOGLE_CLIENT_ID ||
+        GOOGLE_CLIENT_ID === "PASTE_YOUR_GOOGLE_CLIENT_ID_HERE"
+    ) {
+
+        showAlert(
+            "alertBox",
+            "Google login is not configured. Please add your Google Client ID.",
+            "info"
+        );
+
+        return;
+    }
+
+    if (
+        !window.google ||
+        !window.google.accounts ||
+        !window.google.accounts.id
+    ) {
+
+        showAlert(
+            "alertBox",
+            "Google sign-in could not load. Check your internet connection and refresh.",
+            "error"
+        );
+
+        return;
+    }
+
+    try {
+
+        google.accounts.id.initialize({
+
+            client_id: GOOGLE_CLIENT_ID,
+
+            callback: handleGoogleLogin
+
+        });
+
+
+        // Render Google's official sign-in button.
+        const buttonContainer = document.getElementById(
+            "googleSignInButton"
+        );
+
+        buttonContainer.innerHTML = "";
+
+        const cardWidth = document.querySelector(
+            ".auth-card"
+        ).clientWidth;
+
+        const buttonWidth = Math.min(
+            360,
+            Math.max(220, Math.floor(cardWidth - 40))
+        );
+
+        google.accounts.id.renderButton(
+
+            buttonContainer,
+
+            {
+
+                theme: "outline",
+
+                size: "large",
+
+                type: "standard",
+
+                text: "continue_with",
+
+                shape: "rectangular",
+
+                logo_alignment: "left",
+
+                width: buttonWidth
+
+            }
+
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Google initialization error:",
+            error
+        );
+
+        showAlert(
+            "alertBox",
+            "Unable to initialize Google login. Please refresh the page.",
+            "error"
+        );
+
+    }
+
+}
+
+
+// Initialize after the page and Google library load.
+window.addEventListener(
+    "load",
+    initializeGoogleSignIn
+);
+
+
+/* ============================================
+   GOOGLE LOGIN CALLBACK
+============================================ */
+
+async function handleGoogleLogin(response) {
+
+    clearAlert("alertBox");
+
+    document.getElementById(
+        "googleLinkBox"
+    ).hidden = true;
+
+    if (!response || !response.credential) {
+
+        showAlert(
+            "alertBox",
+            "Google did not return a valid login credential.",
+            "error"
+        );
+
+        return;
+    }
+
+    pendingGoogleCredential = response.credential;
+
+    await submitGoogleLogin();
+
+}
+
+
+/* ============================================
+   SUBMIT GOOGLE CREDENTIAL TO FLASK
+============================================ */
+
+async function submitGoogleLogin(password = null) {
+
+    if (!pendingGoogleCredential) {
+
+        showAlert(
+            "alertBox",
+            "Please select your Google account again.",
+            "error"
+        );
+
+        return;
+
+    }
+
+    const linkButton = document.getElementById(
+        "googleLinkBtn"
+    );
+
+    if (linkButton) {
+        linkButton.disabled = true;
+        linkButton.textContent = "Please wait...";
+    }
+
+    const payload = {
+
+        credential: pendingGoogleCredential
+
+    };
+
+    if (password !== null) {
+
+        payload.password = password;
+
+    }
+
+    try {
+
+        // Uses the existing API helper from auth-shared.js.
+        await apiPost(
+            "/auth/google",
+            payload
+        );
+
+        pendingGoogleCredential = null;
+
+        showAlert(
+            "alertBox",
+            "Google sign-in successful! Opening dashboard...",
+            "success"
+        );
+
+        location.replace("dashboard.html");
+
+    } catch (error) {
+
+        console.error(
+            "Google login error:",
+            error
+        );
+
+        const message = error.message || "Google login failed.";
+
+        // Existing account requires password-based linking.
+        const requiresLinking =
+            error.status === 409 &&
+            message.toLowerCase().includes(
+                "existing with this email"
+            );
+
+        if (
+            requiresLinking &&
+            password === null
+        ) {
+
+            document.getElementById(
+                "googleLinkBox"
+            ).hidden = false;
+
+            document.getElementById(
+                "googleLinkPassword"
+            ).value = "";
+
+            document.getElementById(
+                "googleLinkPassword"
+            ).focus();
+
+            showAlert(
+                "alertBox",
+                "An existing Finlumiq account was found. Enter your current password to link Google sign-in.",
+                "info"
+            );
+
+            return;
+
+        }
+
+        showAlert(
+            "alertBox",
+            message,
+            "error"
+        );
+
+    } finally {
+
+        if (linkButton) {
+
+            linkButton.disabled = false;
+
+            linkButton.textContent = "Link & Continue";
+
+        }
+
+    }
+
+}
+
+
+/* ============================================
+   LINK EXISTING Finlumiq ACCOUNT
+============================================ */
+
+document.getElementById(
+    "googleLinkBtn"
+).addEventListener("click", async function() {
+
+    const passwordInput = document.getElementById(
+        "googleLinkPassword"
+    );
+
+    const password = passwordInput.value;
+
+    if (!password) {
+
+        showAlert(
+            "alertBox",
+            "Please enter your existing Finlumiq password.",
+            "warning"
+        );
+
+        passwordInput.focus();
+
+        return;
+
+    }
+
+    await submitGoogleLogin(password);
+
+});
+
+
+/* ============================================
+   CANCEL GOOGLE ACCOUNT LINKING
+============================================ */
+
+document.getElementById(
+    "googleLinkCancel"
+).addEventListener("click", function() {
+
+    pendingGoogleCredential = null;
+
+    document.getElementById(
+        "googleLinkBox"
+    ).hidden = true;
+
+    document.getElementById(
+        "googleLinkPassword"
+    ).value = "";
+
+    clearAlert("alertBox");
+
+    if (window.google?.accounts?.id) {
+
+        google.accounts.id.disableAutoSelect();
+
+    }
+
+});
+
+
+/* ============================================
+   URL REDIRECT MESSAGES
+============================================ */
+
+const params = new URLSearchParams(location.search);
+
+const reason = params.get("reason");
+
+const msgMap = {
+
+    expired: [
+        "Your session has expired. Please sign in again.",
+        "warning"
+    ],
+
+    verified: [
+        "Your email is verified! You can now sign in.",
+        "success"
+    ],
+
+    reset: [
+        "Password reset successful. Sign in with your new password.",
+        "success"
+    ],
+
+    logout: [
+        "You have been signed out.",
+        "info"
+    ]
+
+};
+
+if (reason && msgMap[reason]) {
+
+    showAlert(
+        "alertBox",
+        ...msgMap[reason]
+    );
+
+}
+
+
+/* ============================================
+   EXISTING EMAIL/PASSWORD LOGIN
+============================================ */
+
+document.getElementById(
+    "loginForm"
+).addEventListener("submit", async function(e) {
+
+    e.preventDefault();
+
+    clearAlert("alertBox");
+
+    const emailEl = document.getElementById(
+        "loginEmail"
+    );
+
+    const pwEl = document.getElementById(
+        "loginPassword"
+    );
+
+    const emailErrEl = document.getElementById(
+        "loginEmailErr"
+    );
+
+    const pwErrEl = document.getElementById(
+        "loginPwErr"
+    );
+
+    clearFieldError(
+        emailEl,
+        emailErrEl
+    );
+
+    clearFieldError(
+        pwEl,
+        pwErrEl
+    );
+
+    const email = emailEl.value.trim();
+
+    const password = pwEl.value;
+
+
+    // Client-side validation.
+    if (!email) {
+
+        showFieldError(
+            emailEl,
+            emailErrEl,
+            "Email is required."
+        );
+
+        emailEl.focus();
+
+        return;
+
+    }
+
+    if (!isValidEmail(email)) {
+
+        showFieldError(
+            emailEl,
+            emailErrEl,
+            "Please enter a valid email address."
+        );
+
+        emailEl.focus();
+
+        return;
+
+    }
+
+    if (!password) {
+
+        showFieldError(
+            pwEl,
+            pwErrEl,
+            "Password is required."
+        );
+
+        pwEl.focus();
+
+        return;
+
+    }
+
+
+    const btn = document.getElementById("loginBtn");
+
+    const origText = btn.textContent;
+
+    setButtonLoading(
+        btn,
+        true,
+        origText
+    );
+
+
+    try {
+
+        await apiPost(
+            "/auth/login",
+            {
+                email: email,
+                password: password
+            }
+        );
+
+        location.replace(
+            "dashboard.html"
+        );
+
+    } catch (error) {
+
+        setButtonLoading(
+            btn,
+            false,
+            origText
+        );
+
+        const errData = error.message || "";
+
+        if (
+            errData.includes("verify") ||
+            errData.includes("verification")
+        ) {
+
+            showAlert(
+                "alertBox",
+
+                `${errData} <br><br>
+                <a href="verify-email.html?email=${encodeURIComponent(email)}"
+                   style="font-weight:700;color:var(--primary);">
+                   Resend verification email →
+                </a>`,
+
+                "warning"
+            );
+
+        } else {
+
+            showAlert(
+                "alertBox",
+                errData,
+                "error"
+            );
+
+        }
+
+    }
+
+});
+
+</script>
+
+</body>
+</html>

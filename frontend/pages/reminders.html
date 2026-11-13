@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reminders — Finlumiq</title>
+<link rel="stylesheet" href="css/app.css">
+<style>
+.reminder-section{margin-bottom:24px;}
+.reminder-card{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;transition:box-shadow var(--transition);}
+.reminder-card:hover{box-shadow:var(--shadow-sm);}
+.reminder-card.overdue{border-left:4px solid var(--danger);background:var(--danger-soft);}
+.reminder-card.due-soon{border-left:4px solid var(--warning);background:var(--warning-soft);}
+.reminder-card.upcoming{border-left:4px solid var(--info);}
+.reminder-icon{font-size:1.4rem;flex-shrink:0;}
+.reminder-body{flex:1;min-width:0;}
+.reminder-title{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.reminder-sub{font-size:0.8rem;color:var(--muted);margin-top:2px;}
+.reminder-amt{font-weight:800;font-size:1rem;flex-shrink:0;text-align:right;}
+</style>
+</head>
+<body>
+<div id="appNav"></div>
+<header class="topbar">
+  <a class="topbar-brand" href="dashboard.html"><div class="topbar-logo">🎓</div><span class="topbar-title">Finlumiq</span></a>
+  <div class="topbar-right">
+    <span class="topbar-page-title">Reminders</span>
+    <button class="theme-toggle-btn">🌙</button>
+    <button id="navOpenBtn" class="nav-open-btn">☰</button>
+  </div>
+</header>
+
+<main class="page-wrap">
+  <div class="page-header">
+    <div class="page-header-left"><h1>🔔 Reminders</h1><p>Stay on top of deadlines and upcoming payments.</p></div>
+    <div id="alertBadgeWrap"></div>
+  </div>
+
+  <div id="remindersContent">
+    <div class="loading-state"><div class="spinner"></div><span>Loading reminders…</span></div>
+  </div>
+</main>
+
+<div id="confirmModal" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal"><div class="modal-body" style="text-align:center;padding:32px 24px;"><div id="confirmTitle" style="font-weight:700;margin-bottom:8px;font-size:1.1rem;"></div><div id="confirmBody" style="color:var(--muted);"></div></div>
+  <div class="modal-footer"><button id="confirmNo" class="btn btn-secondary">Cancel</button><button id="confirmYes" class="btn btn-danger">Confirm</button></div></div>
+</div>
+
+<script src="js/common.js"></script>
+<script src="js/nav.js"></script>
+<script>
+initTheme();
+async function init(){
+  const user=await requireAuth(); buildNav('reminders',user);
+  loadReminders();
+}
+
+async function loadReminders(){
+  try{
+    const data=await API_CLIENT.get('/reminders');
+    renderReminders(data);
+    if(data.total_alerts>0){
+      document.getElementById('alertBadgeWrap').innerHTML=`<span class="badge badge-danger" style="font-size:0.9rem;padding:6px 14px;">⚠️ ${data.total_alerts} urgent alert${data.total_alerts>1?'s':''}</span>`;
+    }
+  }catch(e){showToast(e.message,'error');}
+}
+
+function renderReminders(data){
+  const el=document.getElementById('remindersContent');
+  const sections=[];
+
+  if(data.overdue_fees&&data.overdue_fees.length){
+    sections.push(`<div class="reminder-section">
+      <div class="section-title">🚨 Overdue Fees</div>
+      ${data.overdue_fees.map(f=>`<div class="reminder-card overdue">
+        <div class="reminder-icon">🏫</div>
+        <div class="reminder-body">
+          <div class="reminder-title">${escapeHtml(f.fee_title)}</div>
+          <div class="reminder-sub">${escapeHtml(f.fee_category)} · Was due ${formatDate(f.due_date)}</div>
+        </div>
+        <div class="reminder-amt text-danger">${money(f.remaining)}</div>
+        <a href="college-fees.html" class="btn btn-sm btn-danger">Pay Now</a>
+      </div>`).join('')}
+    </div>`);
+  }
+
+  if(data.fees_due_7_days&&data.fees_due_7_days.length){
+    sections.push(`<div class="reminder-section">
+      <div class="section-title">⚡ Due This Week</div>
+      ${data.fees_due_7_days.map(f=>`<div class="reminder-card due-soon">
+        <div class="reminder-icon">🏫</div>
+        <div class="reminder-body">
+          <div class="reminder-title">${escapeHtml(f.fee_title)}</div>
+          <div class="reminder-sub">Due ${formatDate(f.due_date)} · ${escapeHtml(f.fee_category)}</div>
+        </div>
+        <div class="reminder-amt text-warning">${money(f.remaining)}</div>
+        <a href="college-fees.html" class="btn btn-sm btn-warning">Pay</a>
+      </div>`).join('')}
+    </div>`);
+  }
+
+  if(data.fees_due_15_days&&data.fees_due_15_days.length){
+    sections.push(`<div class="reminder-section">
+      <div class="section-title">📅 Due in 15 Days</div>
+      ${data.fees_due_15_days.map(f=>`<div class="reminder-card upcoming">
+        <div class="reminder-icon">🏫</div>
+        <div class="reminder-body">
+          <div class="reminder-title">${escapeHtml(f.fee_title)}</div>
+          <div class="reminder-sub">Due ${formatDate(f.due_date)}</div>
+        </div>
+        <div class="reminder-amt">${money(f.remaining)}</div>
+        <a href="college-fees.html" class="btn btn-sm btn-secondary">View</a>
+      </div>`).join('')}
+    </div>`);
+  }
+
+  if(data.upcoming_goal_deadlines&&data.upcoming_goal_deadlines.length){
+    sections.push(`<div class="reminder-section">
+      <div class="section-title">🏦 Savings Goal Deadlines</div>
+      ${data.upcoming_goal_deadlines.map(g=>`<div class="reminder-card upcoming">
+        <div class="reminder-icon">🎯</div>
+        <div class="reminder-body">
+          <div class="reminder-title">${escapeHtml(g.goal_title)}</div>
+          <div class="reminder-sub">Target by ${formatDate(g.target_date)} · Saved ${money(g.current_saved_amount)} of ${money(g.target_amount)}</div>
+        </div>
+        <a href="savings-goals.html" class="btn btn-sm btn-primary">Add Money</a>
+      </div>`).join('')}
+    </div>`);
+  }
+
+  if(data.upcoming_scholarship_deadlines&&data.upcoming_scholarship_deadlines.length){
+    sections.push(`<div class="reminder-section">
+      <div class="section-title">🎓 Scholarship Application Deadlines</div>
+      ${data.upcoming_scholarship_deadlines.map(s=>`<div class="reminder-card due-soon">
+        <div class="reminder-icon">📋</div>
+        <div class="reminder-body">
+          <div class="reminder-title">${escapeHtml(s.scholarship_name)}</div>
+          <div class="reminder-sub">Deadline: ${formatDate(s.application_deadline)}</div>
+        </div>
+        <a href="scholarships.html" class="btn btn-sm btn-primary">Apply</a>
+      </div>`).join('')}
+    </div>`);
+  }
+
+  if(!sections.length){
+    el.innerHTML=`<div class="empty-state" style="padding:60px;">
+      <div class="empty-icon">🎉</div>
+      <h3>All clear!</h3>
+      <p>No overdue fees, upcoming deadlines, or savings alerts right now. Great job!</p>
+    </div>`;
+    return;
+  }
+  el.innerHTML=sections.join('');
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Smart receipt scanner with OCR quality checks, category suggestions and monthly receipt insights for Finlumiq.">
+<title>Smart Receipt Scanner — Finlumiq</title>
+<link rel="stylesheet" href="css/app.css">
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<style>
+  .scanner-intro{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+  .scanner-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:22px}
+  .scanner-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px}
+  .scanner-stat-label{font-size:.78rem;color:var(--muted)}
+  .scanner-stat-value{font-size:1rem;font-weight:750;margin-top:5px}
+  .scanner-layout{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:20px;align-items:start}
+  .scanner-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;min-width:0}
+  .scanner-card-title{font-size:1rem;font-weight:750;margin-bottom:4px}
+  .scanner-help{font-size:.83rem;color:var(--muted);line-height:1.5}
+  .upload-zone{border:2px dashed var(--border);border-radius:var(--radius-lg);padding:30px 18px;text-align:center;background:var(--surface-2);transition:border-color .15s,background .15s;cursor:pointer}
+  .upload-zone.dragover{border-color:var(--primary,#6366f1);background:rgba(99,102,241,.08)}
+  .upload-icon{font-size:2.4rem;margin-bottom:8px}
+  .preview-stage{min-height:260px;display:flex;align-items:center;justify-content:center;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-top:14px;padding:12px}
+  .preview-stage img{display:block;max-width:100%;max-height:440px;object-fit:contain;transition:transform .15s}
+  .preview-empty{color:var(--muted);text-align:center;font-size:.88rem}
+  .preview-tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .scanner-progress{height:9px;background:var(--surface-2);border:1px solid var(--border);border-radius:20px;overflow:hidden;margin-top:10px}
+  .scanner-progress>div{height:100%;width:0;background:var(--primary,#6366f1);transition:width .2s}
+  .status-box{padding:11px 13px;border-radius:var(--radius);font-size:.85rem;margin-top:12px;background:var(--surface-2);border:1px solid var(--border)}
+  .status-box.success{border-color:#22c55e;background:rgba(34,197,94,.08)}
+  .status-box.error{border-color:#ef4444;background:rgba(239,68,68,.08)}
+  .status-box.warning{border-color:#f59e0b;background:rgba(245,158,11,.08)}
+  .extracted-form{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-top:16px}
+  .extracted-form .full{grid-column:1/-1}
+  .extracted-form input,.extracted-form select,.extracted-form textarea{width:100%}
+  .confidence-line{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:10px;font-size:.8rem;color:var(--muted)}
+  .ocr-text{white-space:pre-wrap;overflow-wrap:anywhere;max-height:220px;overflow:auto;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;font-size:.8rem;line-height:1.5}
+  .section-divider{border:0;border-top:1px solid var(--border);margin:18px 0}
+  .insight-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+  .insight-stat{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:13px;min-width:0}
+  .insight-stat-label{font-size:.76rem;color:var(--muted)}
+  .insight-stat-value{font-size:1.12rem;font-weight:800;margin-top:5px;overflow-wrap:anywhere}
+  .insight-columns{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+  .insight-list{margin:8px 0 0;padding-left:18px;font-size:.84rem;line-height:1.55}
+  .insight-list li{margin:4px 0}
+  .suggestion-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .suggestion-chip{border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:999px;padding:7px 11px;font-size:.78rem;cursor:pointer}
+  .suggestion-chip:hover,.suggestion-chip:focus{border-color:var(--primary,#6366f1);outline:2px solid rgba(99,102,241,.18)}
+  .quality-panel{border:1px solid var(--border);background:var(--surface-2);border-radius:var(--radius);padding:11px 12px;margin-top:10px}
+  .quality-track{height:7px;border-radius:99px;overflow:hidden;background:var(--border);margin-top:7px}
+  .quality-track>div{height:100%;background:var(--primary,#6366f1);width:0;transition:width .2s}
+  .candidate-list{display:grid;gap:6px;margin-top:8px}
+  .candidate-row{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dashed var(--border);padding:5px 0;font-size:.8rem}
+  .candidate-row:last-child{border-bottom:0}
+  .mini-muted{font-size:.76rem;color:var(--muted)}
+  .insight-tag{display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:999px;padding:4px 8px;font-size:.72rem;margin:4px 4px 0 0;color:var(--muted)}
+  @media(max-width:700px){.insight-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.insight-columns{grid-template-columns:1fr}}
+  .field-note{font-size:.75rem;color:var(--muted);margin-top:4px}
+  button:disabled{opacity:.55;cursor:not-allowed}
+  .hidden-input{display:none!important}
+  .camera-modal{position:fixed;inset:0;z-index:10000;background:rgba(15,23,42,.88);display:flex;align-items:center;justify-content:center;padding:16px}
+  .camera-modal[hidden]{display:none!important}
+  .camera-dialog{width:min(760px,100%);max-height:calc(100vh - 32px);overflow:auto;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:0 18px 60px rgba(0,0,0,.3);padding:16px}
+  .camera-video-wrap{display:flex;align-items:center;justify-content:center;background:#050505;border-radius:var(--radius);min-height:220px;max-height:68vh;overflow:hidden;margin-top:12px}
+  .camera-video{display:block;width:100%;max-height:68vh;object-fit:contain;background:#050505}
+  .camera-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:12px}
+  .camera-note{font-size:.8rem;color:var(--muted);margin-top:8px;line-height:1.5}
+  @media(max-width:850px){.scanner-layout{grid-template-columns:1fr}}
+  @media(max-width:520px){.scanner-stats{grid-template-columns:1fr}.extracted-form{grid-template-columns:1fr}.extracted-form .full{grid-column:auto}.scanner-card{padding:14px}.upload-zone{padding:22px 12px}}
+</style>
+</head>
+<body>
+<div id="appNav"></div>
+<header class="topbar">
+  <a class="topbar-brand" href="dashboard.html"><div class="topbar-logo">🎓</div><span class="topbar-title">Finlumiq</span></a>
+  <div class="topbar-right">
+    <span class="topbar-page-title">Receipt Scanner</span>
+    <button class="theme-toggle-btn" aria-label="Toggle theme">🌙</button>
+    <button id="navOpenBtn" class="nav-open-btn" aria-label="Open menu">☰</button>
+  </div>
+</header>
+
+<main class="page-wrap">
+  <div class="scanner-intro">
+    <div class="page-header-left">
+      <h1>📸 Receipt Scanner</h1>
+      <p>Scan receipts, review smart category suggestions, check extraction quality and explore monthly receipt insights.</p>
+    </div>
+    <a href="expenses.html" class="btn btn-secondary">View Expenses ↗</a>
+  </div>
+
+  <div class="scanner-stats">
+    <div class="scanner-stat"><div class="scanner-stat-label">Saved receipt scans</div><div class="scanner-stat-value" id="scanCount">—</div></div>
+    <div class="scanner-stat"><div class="scanner-stat-label">Saved expenses from receipts</div><div class="scanner-stat-value" id="savedCount">—</div></div>
+    <div class="scanner-stat"><div class="scanner-stat-label">Total scanned amount (latest 25)</div><div class="scanner-stat-value" id="scannedAmount">—</div></div>
+  </div>
+
+  <section class="scanner-card mb-24" id="smartInsightsCard" aria-labelledby="smartInsightsTitle">
+    <div class="d-flex" style="justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <div>
+        <div class="scanner-card-title" id="smartInsightsTitle">🧠 Smart Receipt Insights</div>
+        <p class="scanner-help">Monthly patterns calculated from your saved receipt records. These are rule-based insights, not AI-generated financial advice.</p>
+      </div>
+      <button type="button" class="btn btn-sm btn-secondary" id="refreshInsightsBtn">Refresh insights</button>
+    </div>
+    <div class="insight-grid">
+      <div class="insight-stat"><div class="insight-stat-label">Receipts this month</div><div class="insight-stat-value" id="insightScanCount">—</div></div>
+      <div class="insight-stat"><div class="insight-stat-label">Scanned amount</div><div class="insight-stat-value" id="insightTotalAmount">—</div></div>
+      <div class="insight-stat"><div class="insight-stat-label">Average receipt</div><div class="insight-stat-value" id="insightAverageAmount">—</div></div>
+      <div class="insight-stat"><div class="insight-stat-label">Compared with last month</div><div class="insight-stat-value" id="insightChange">—</div></div>
+    </div>
+    <div class="insight-columns">
+      <div><strong style="font-size:.88rem">What stands out</strong><ul class="insight-list" id="insightMessages"><li class="mini-muted">Loading monthly insights…</li></ul></div>
+      <div><strong style="font-size:.88rem">Top receipt categories</strong><div id="insightCategories" class="mini-muted" style="margin-top:8px">Loading…</div><strong style="display:block;font-size:.88rem;margin-top:12px">Frequent merchants</strong><div id="insightMerchants" class="mini-muted" style="margin-top:8px">Loading…</div></div>
+    </div>
+    <div id="insightStatus" class="mini-muted" style="margin-top:12px" role="status">Loading receipt insights…</div>
+  </section>
+
+  <div class="scanner-layout">
+    <section class="scanner-card" aria-labelledby="uploadTitle">
+      <div class="scanner-card-title" id="uploadTitle">1. Add your receipt</div>
+      <p class="scanner-help">Choose a clear JPG, JPEG or PNG image. For best results, keep the receipt flat, well-lit and fully visible.</p>
+
+      <div class="upload-zone" id="uploadZone" role="button" tabindex="0" aria-label="Choose a receipt image">
+        <div class="upload-icon">☁️</div>
+        <div style="font-weight:700;margin-bottom:5px">Drag and drop your receipt here</div>
+        <div class="scanner-help">or choose an image from your device</div>
+        <div style="margin-top:14px"><button type="button" class="btn btn-primary" id="browseBtn">Browse Files</button></div>
+        <div class="field-note">JPG, JPEG or PNG · Maximum 10 MB</div>
+      </div>
+
+      <input class="hidden-input" type="file" id="receiptFile" accept="image/jpeg,image/png,image/jpg">
+
+      <div class="d-flex gap-8" style="margin-top:12px;flex-wrap:wrap">
+        <button type="button" class="btn btn-secondary" id="cameraBtn">📷 Take Photo</button>
+        <button type="button" class="btn btn-secondary" id="rotateBtn" disabled>↻ Rotate</button>
+        <button type="button" class="btn btn-secondary" id="removeBtn" disabled>Remove Image</button>
+      </div>
+
+      <div class="preview-stage" id="previewStage">
+        <div class="preview-empty" id="previewEmpty">Your receipt preview will appear here.</div>
+        <img id="receiptPreview" alt="Uploaded receipt preview" hidden>
+      </div>
+
+      <div class="d-flex gap-8" style="margin-top:14px;flex-wrap:wrap">
+        <button type="button" class="btn btn-primary" id="scanBtn" disabled>✨ Extract Receipt Details</button>
+        <button type="button" class="btn btn-secondary" id="resetBtn">Reset</button>
+      </div>
+
+      <div id="scanStatus" class="status-box" role="status" aria-live="polite" hidden></div>
+      <div id="progressWrap" hidden>
+        <div class="confidence-line"><span id="progressLabel">Preparing OCR…</span><strong id="progressPercent">0%</strong></div>
+        <div class="scanner-progress"><div id="progressBar"></div></div>
+      </div>
+    </section>
+
+    <section class="scanner-card" aria-labelledby="detailsTitle">
+      <div class="scanner-card-title" id="detailsTitle">2. Review extracted details</div>
+      <p class="scanner-help">OCR can make mistakes. Check every field and correct it before using these details in the next phase.</p>
+
+      <form id="reviewForm" class="extracted-form" novalidate>
+        <div class="form-group full">
+          <label class="form-label" for="merchantInput">Merchant / Shop name</label>
+          <input id="merchantInput" type="text" class="form-control" maxlength="150" placeholder="e.g. ABC Canteen">
+        </div>
+
+        <div class="form-group full">
+          <label class="form-label" for="titleInput">Expense title</label>
+          <input id="titleInput" type="text" class="form-control" maxlength="150" placeholder="e.g. Lunch">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="amountInput">Total amount (₹)</label>
+          <input id="amountInput" type="number" class="form-control" min="0.01" step="0.01" placeholder="0.00">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="dateInput">Expense date</label>
+          <input id="dateInput" type="date" class="form-control">
+        </div>
+
+        <div class="form-group full">
+          <label class="form-label" for="categoryInput">Suggested category</label>
+          <select id="categoryInput" class="form-control">
+            <option value="">Load categories / select later</option>
+          </select>
+          <div class="field-note" id="categoryHint">Category suggestions are based on receipt text. You can change the selection.</div>
+        </div>
+
+        <div class="form-group full">
+          <label class="form-label" for="notesInput">Notes (optional)</label>
+          <textarea id="notesInput" class="form-control" rows="2" maxlength="500" placeholder="Add any extra information…"></textarea>
+        </div>
+      </form>
+
+      <div class="confidence-line"><span>OCR confidence (overall)</span><strong id="confidenceValue">Not scanned</strong></div>
+      <div class="quality-panel" id="ocrQualityPanel" hidden>
+        <div class="d-flex" style="justify-content:space-between;gap:10px;align-items:center"><strong style="font-size:.82rem">Image / OCR quality</strong><span class="badge badge-muted" id="ocrQualityBadge">Not assessed</span></div>
+        <div class="quality-track"><div id="ocrQualityBar"></div></div>
+        <div class="mini-muted" id="ocrQualityHint" style="margin-top:7px">Run OCR to receive quality guidance.</div>
+      </div>
+      <div class="quality-panel" id="receiptBreakdown" hidden>
+        <strong style="font-size:.82rem">Detected receipt totals (verify before saving)</strong>
+        <div id="receiptBreakdownContent" class="mini-muted" style="margin-top:7px"></div>
+      </div>
+      <div class="quality-panel" id="categorySuggestionPanel" hidden>
+        <strong style="font-size:.82rem">Smart category suggestions</strong>
+        <div class="mini-muted" style="margin-top:4px">Suggestions are matched against categories returned by your existing database API.</div>
+        <div class="suggestion-list" id="categorySuggestionList"></div>
+      </div>
+      <div class="quality-panel" id="lineCandidatePanel" hidden>
+        <strong style="font-size:.82rem">Possible receipt line items</strong>
+        <div class="mini-muted" style="margin-top:4px">OCR text candidates only; they are not saved as separate expenses.</div>
+        <div id="lineCandidateList" class="candidate-list"></div>
+      </div>
+      <div id="reviewStatus" class="status-box" role="status" aria-live="polite">Upload a receipt and select “Extract Receipt Details” to populate this form.</div>
+      <div class="d-flex gap-8" style="margin-top:12px;flex-wrap:wrap">
+        <button type="submit" form="reviewForm" class="btn btn-primary" id="saveExpenseBtn" disabled>💾 Save as Expense</button>
+        <a href="expenses.html" class="btn btn-secondary">View Expenses</a>
+      </div>
+      <div class="field-note" style="margin-top:8px">The expense is saved through your existing /api/expenses endpoint. Receipt scan details are stored separately for scan history.</div>
+
+      <div class="section-divider"></div>
+      <div class="d-flex" style="justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div>
+          <div class="scanner-card-title" style="font-size:.92rem">Extracted text</div>
+          <p class="scanner-help">Raw OCR text for checking extraction accuracy.</p>
+        </div>
+        <button type="button" class="btn btn-sm btn-secondary" id="copyTextBtn" disabled>Copy text</button>
+      </div>
+      <div id="ocrText" class="ocr-text" style="margin-top:10px">No text extracted yet.</div>
+      <div class="field-note" style="margin-top:12px">OCR results, category suggestions and line-item candidates are suggestions. Always verify the amount, date and category before saving. The original image is processed in your browser and is not uploaded or stored by this page; the SHA-256 fingerprint and extracted text are saved for duplicate checks and scan history.</div>
+    </section>
+  </div>
+
+  <div class="card mt-24" id="receiptHistoryCard">
+    <div class="d-flex" style="justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <div>
+        <div class="section-title" style="margin-bottom:4px">🧾 Recent scanned receipts</div>
+        <p class="scanner-help">Your latest receipts saved with an expense in Finlumiq.</p>
+      </div>
+      <button type="button" class="btn btn-sm btn-secondary" id="refreshHistoryBtn">Refresh</button>
+    </div>
+    <div id="historyStatus" class="scanner-help" style="margin:10px 0">Loading receipt history…</div>
+    <div id="receiptHistory"></div>
+  </div>
+
+  <div class="card mt-24">
+    <div class="section-title">💡 Tips for accurate scanning</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px">
+      <div><strong>Good lighting</strong><div class="scanner-help">Avoid shadows and glare over the printed text.</div></div>
+      <div><strong>Keep it flat</strong><div class="scanner-help">Place the receipt on a plain, contrasting surface.</div></div>
+      <div><strong>Capture all edges</strong><div class="scanner-help">Make sure the date and final amount are not cut off.</div></div>
+      <div><strong>Verify the total</strong><div class="scanner-help">Always compare the extracted amount with the receipt before saving.</div></div>
+    </div>
+  </div>
+</main>
+
+<!-- Live camera dialog: opens the device camera instead of the file picker. -->
+<div class="camera-modal" id="cameraModal" hidden role="dialog" aria-modal="true" aria-labelledby="cameraDialogTitle">
+  <div class="camera-dialog">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <div>
+        <div id="cameraDialogTitle" class="scanner-card-title">📷 Take a receipt photo</div>
+        <div id="cameraMessage" class="camera-note" role="status">Allow camera access when your browser asks.</div>
+      </div>
+      <button type="button" class="btn btn-secondary" id="closeCameraBtn">Close</button>
+    </div>
+    <div class="camera-video-wrap">
+      <video id="cameraVideo" class="camera-video" autoplay muted playsinline></video>
+    </div>
+    <canvas id="cameraCanvas" hidden></canvas>
+    <div class="camera-actions">
+      <button type="button" class="btn btn-secondary" id="switchCameraBtn">Switch camera</button>
+      <button type="button" class="btn btn-primary" id="capturePhotoBtn" disabled>Capture Photo</button>
+    </div>
+    <div class="camera-note">On phones, the rear camera is preferred. On laptops and desktops, the browser uses the available webcam. Camera access requires permission and a secure page (localhost or HTTPS).</div>
+  </div>
+</div>
+
+<script src="js/common.js"></script>
+<script src="js/nav.js"></script>
+<script>
+'use strict';
+
+initTheme();
+
+const $ = id => document.getElementById(id);
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const ALLOWED_TYPES = ['image/jpeg', 'image/png'];
+let currentFile = null;
+let previewUrl = null;
+let rotation = 0;
+let categories = [];
+let extractedText = '';
+let lastOcrConfidence = null;
+let ocrWorker = null;
+let receiptHistory = [];
+let pendingHistory = null;
+let saving = false;
+let cameraStream = null;
+let cameraFacingMode = 'environment';
+let cameraStarting = false;
+
+function localTodayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function showStatus(element, message, type='') {
+  element.textContent = message;
+  element.className = 'status-box' + (type ? ' ' + type : '');
+  element.hidden = false;
+}
+
+function setBusy(isBusy) {
+  const locked = isBusy || !!pendingHistory;
+  $('scanBtn').disabled = isBusy || !currentFile;
+  $('saveExpenseBtn').disabled = isBusy || !currentFile || !!pendingHistory;
+  $('browseBtn').disabled = locked;
+  $('cameraBtn').disabled = locked;
+  $('rotateBtn').disabled = locked || !currentFile;
+  $('removeBtn').disabled = locked || !currentFile;
+  $('scanBtn').textContent = isBusy ? 'Processing…' : '✨ Extract Receipt Details';
+}
+
+function revokePreview() {
+  if (previewUrl) {
+    URL.revokeObjectURL(previewUrl);
+    previewUrl = null;
+  }
+}
+
+function acceptFile(file) {
+  if (!file) return;
+  if (pendingHistory) {
+    showStatus($('reviewStatus'), 'A saved expense is waiting for its receipt history entry. Retry saving the history before selecting another image.', 'warning');
+    return;
+  }
+  const isAllowed = ALLOWED_TYPES.includes(file.type) || /\.(jpe?g|png)$/i.test(file.name || '');
+  if (!isAllowed) {
+    showStatus($('scanStatus'), 'Unsupported file type. Please upload a JPG, JPEG or PNG image.', 'error');
+    return;
+  }
+  if (file.size > MAX_FILE_SIZE) {
+    showStatus($('scanStatus'), 'This image is larger than 10 MB. Please choose a smaller image.', 'error');
+    return;
+  }
+  if (file.size === 0) {
+    showStatus($('scanStatus'), 'The selected image is empty. Please choose another image.', 'error');
+    return;
+  }
+
+  currentFile = file;
+  rotation = 0;
+  revokePreview();
+  previewUrl = URL.createObjectURL(file);
+  $('receiptPreview').src = previewUrl;
+  $('receiptPreview').hidden = false;
+  $('previewEmpty').hidden = true;
+  $('receiptPreview').style.transform = 'rotate(0deg)';
+  $('scanBtn').disabled = false;
+  $('saveExpenseBtn').disabled = false;
+  $('rotateBtn').disabled = false;
+  $('removeBtn').disabled = false;
+  $('scanStatus').hidden = true;
+  $('progressWrap').hidden = true;
+  $('progressBar').style.width = '0%';
+  $('progressPercent').textContent = '0%';
+  $('ocrText').textContent = 'No text extracted yet.';
+  $('copyTextBtn').disabled = true;
+  $('confidenceValue').textContent = 'Not scanned';
+  lastOcrConfidence = null;
+  $('ocrQualityPanel').hidden = true;
+  $('receiptBreakdown').hidden = true;
+  $('categorySuggestionPanel').hidden = true;
+  $('lineCandidatePanel').hidden = true;
+  extractedText = '';
+  showStatus($('reviewStatus'), 'Receipt uploaded. Select “Extract Receipt Details” to read the image.');
+}
+
+function clearImage() {
+  currentFile = null;
+  rotation = 0;
+  revokePreview();
+  $('receiptPreview').removeAttribute('src');
+  $('receiptPreview').hidden = true;
+  $('previewEmpty').hidden = false;
+  $('receiptFile').value = '';
+  $('scanBtn').disabled = true;
+  $('saveExpenseBtn').disabled = true;
+  $('rotateBtn').disabled = true;
+  $('removeBtn').disabled = true;
+  $('scanStatus').hidden = true;
+  $('progressWrap').hidden = true;
+}
+
+function resetPage() {
+  if (pendingHistory) {
+    showStatus($('reviewStatus'), 'Finish the pending receipt-history save before resetting or replacing this receipt.', 'warning');
+    return;
+  }
+  clearImage();
+  $('reviewForm').reset();
+  $('dateInput').value = localTodayISO();
+  $('ocrText').textContent = 'No text extracted yet.';
+  $('copyTextBtn').disabled = true;
+  $('confidenceValue').textContent = 'Not scanned';
+  lastOcrConfidence = null;
+  $('ocrQualityPanel').hidden = true;
+  $('receiptBreakdown').hidden = true;
+  $('categorySuggestionPanel').hidden = true;
+  $('lineCandidatePanel').hidden = true;
+  extractedText = '';
+  showStatus($('reviewStatus'), 'Upload a receipt and select “Extract Receipt Details” to populate this form.');
+}
+
+function makeRotatedCanvas(image, degrees) {
+  const swap = degrees % 180 !== 0;
+  const canvas = document.createElement('canvas');
+  canvas.width = swap ? image.naturalHeight : image.naturalWidth;
+  canvas.height = swap ? image.naturalWidth : image.naturalHeight;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Your browser could not prepare the receipt image.');
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.rotate(degrees * Math.PI / 180);
+  ctx.drawImage(image, -image.naturalWidth / 2, -image.naturalHeight / 2);
+  return canvas;
+}
+
+function loadImage(url) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('The selected image could not be opened. Please try another image.'));
+    image.src = url;
+  });
+}
+
+function preprocessForOCR(sourceCanvas) {
+  const canvas = document.createElement('canvas');
+  canvas.width = sourceCanvas.width;
+  canvas.height = sourceCanvas.height;
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  if (!context) return sourceCanvas;
+  context.drawImage(sourceCanvas, 0, 0);
+  try {
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    const pixels = imageData.data;
+    const contrast = 1.12;
+    for (let i = 0; i < pixels.length; i += 4) {
+      const gray = 0.299 * pixels[i] + 0.587 * pixels[i + 1] + 0.114 * pixels[i + 2];
+      const adjusted = Math.max(0, Math.min(255, (gray - 128) * contrast + 128));
+      pixels[i] = adjusted;
+      pixels[i + 1] = adjusted;
+      pixels[i + 2] = adjusted;
+    }
+    context.putImageData(imageData, 0, 0);
+    return canvas;
+  } catch (error) {
+    console.warn('Image enhancement was skipped:', error);
+    return sourceCanvas;
+  }
+}
+
+function findAmount(text) {
+  const lines = text.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+  const totalPattern = /\b(grand\s*total|total\s*amount|amount\s*payable|net\s*amount|bill\s*total|total|payable|balance\s*due)\b/i;
+  const parseValues = line => {
+    const matches = [...line.matchAll(/(?:₹|rs\.?|inr)\s*([0-9][0-9,]*(?:\.\d{1,2})?)|\b([0-9]{1,7}(?:,[0-9]{2,3})*(?:\.\d{1,2})?)\b/gi)];
+    return matches.map(m => Number((m[1] || m[2] || '').replace(/,/g, ''))).filter(n => Number.isFinite(n) && n > 0);
+  };
+  const totalLines = lines.filter(line => totalPattern.test(line));
+  for (let i = totalLines.length - 1; i >= 0; i--) {
+    const values = parseValues(totalLines[i]);
+    if (values.length) return values[values.length - 1];
+  }
+  const all = lines.flatMap(parseValues);
+  return all.length ? Math.max(...all) : null;
+}
+
+function findDate(text) {
+  const patterns = [
+    /(20\d{2})[./-](\d{1,2})[./-](\d{1,2})/,
+    /\b(\d{1,2})[./-](\d{1,2})[./-](20\d{2})\b/
+  ];
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (!match) continue;
+    let y, m, d;
+    if (pattern === patterns[0]) { y = +match[1]; m = +match[2]; d = +match[3]; }
+    else { d = +match[1]; m = +match[2]; y = +match[3]; }
+    const date = new Date(y, m - 1, d);
+    if (date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d) {
+      return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    }
+  }
+  return '';
+}
+
+function findMerchant(text) {
+  const ignored = /^(tax invoice|invoice|receipt|cash memo|bill|date|time|gstin|phone|mobile|tel|www\.|http)/i;
+  const lines = text.split(/\r?\n/).map(s => s.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  for (const line of lines.slice(0, 8)) {
+    if (line.length >= 3 && !ignored.test(line) && !/^\d+[\s/-]/.test(line) && !/^[\W\d]+$/.test(line)) {
+      return line.slice(0, 150);
+    }
+  }
+  return '';
+}
+
+function suggestCategories(text) {
+  const value = String(text || '').toLowerCase();
+  if (!value.trim() || !categories.length) return [];
+
+  const groupKeywords = {
+    food: ['canteen','restaurant','hotel','cafe','food','lunch','dinner','breakfast','snack','grocery','supermarket','noodles','rice','meal','juice','tea','coffee'],
+    bills: ['recharge','mobile','electricity','water bill','internet','broadband','utility','telephone','data pack'],
+    transport: ['bus','auto','taxi','cab','metro','railway','train','petrol','fuel','transport','ticket','fare'],
+    college: ['college','university','tuition','exam fee','school','bookstore','stationery','lab fee','library','textbook','course'],
+    health: ['hospital','clinic','pharmacy','medical','medicine','health','doctor','diagnostic'],
+    fun: ['movie','cinema','entertainment','game','subscription','concert'],
+    shopping: ['clothing','fashion','shopping','footwear','mall','dress','shirt','shoes'],
+    living: ['rent','hostel','accommodation','maintenance','household'],
+    other: ['miscellaneous','other']
+  };
+
+  const results = categories.map(category => {
+    const name = String(category.name || '').toLowerCase();
+    const group = String(category.group || category.grp || 'other').toLowerCase();
+    let score = 0;
+    const matched = [];
+    if (name && value.includes(name)) { score += 8; matched.push(category.name); }
+    const key = Object.keys(groupKeywords).find(g => group.includes(g)) || group;
+    const words = groupKeywords[key] || [];
+    words.forEach(word => {
+      if (value.includes(word)) { score += 2; matched.push(word); }
+    });
+    if (key && value.includes(key)) score += 1;
+    return { category, score, matched: [...new Set(matched)] };
+  }).filter(item => item.score > 0)
+    .sort((a,b) => b.score - a.score || String(a.category.name).localeCompare(String(b.category.name)));
+
+  return results.slice(0, 3);
+}
+
+function renderCategorySuggestions(text) {
+  const panel = $('categorySuggestionPanel');
+  const list = $('categorySuggestionList');
+  const suggestions = suggestCategories(text);
+  if (!suggestions.length) {
+    panel.hidden = true;
+    list.innerHTML = '';
+    return [];
+  }
+  panel.hidden = false;
+  list.innerHTML = suggestions.map((item, index) => {
+    const label = `${item.category.icon || '📁'} ${item.category.name || 'Category'}${index === 0 ? ' · Best match' : ''}`;
+    const reason = item.matched.length ? item.matched.slice(0, 3).join(', ') : (item.category.group || item.category.grp || 'Group match');
+    return `<button type="button" class="suggestion-chip" data-category-id="${Number(item.category.id)}" title="Matched: ${escapeHtml(reason)}">${escapeHtml(label)}</button>`;
+  }).join('');
+  list.querySelectorAll('[data-category-id]').forEach(button => {
+    button.addEventListener('click', () => {
+      $('categoryInput').value = button.dataset.categoryId;
+      const selected = categories.find(c => Number(c.id) === Number(button.dataset.categoryId));
+      $('categoryHint').textContent = selected ? `Selected suggestion: ${selected.name}. Please verify before saving.` : 'Suggested category selected.';
+    });
+  });
+  return suggestions;
+}
+
+function labeledAmount(text, labelRegex) {
+  const lines = String(text || '').split(/\r?\n/);
+  for (const line of lines) {
+    if (!labelRegex.test(line)) continue;
+    const match = line.match(/(?:₹|rs\.?|inr)?\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i);
+    if (match) {
+      const amount = Number(match[1].replace(/,/g, ''));
+      if (Number.isFinite(amount) && amount >= 0) return amount;
+    }
+  }
+  return null;
+}
+
+function renderReceiptBreakdown(text) {
+  const items = [
+    ['Subtotal', labeledAmount(text, /\b(sub.?total|taxable value)\b/i)],
+    ['Tax / GST', labeledAmount(text, /\b(gst|cgst|sgst|igst|tax)\b/i)],
+    ['Discount', labeledAmount(text, /\b(discount|saving|savings)\b/i)]
+  ].filter(item => item[1] !== null);
+  if (!items.length) {
+    $('receiptBreakdown').hidden = true;
+    $('receiptBreakdownContent').textContent = '';
+    return;
+  }
+  $('receiptBreakdown').hidden = false;
+  $('receiptBreakdownContent').innerHTML = items.map(([label,value]) => `<span class="insight-tag">${escapeHtml(label)}: ${formatMoney(value)}</span>`).join('');
+}
+
+function renderLineCandidates(text, receiptTotal) {
+  const totalWords = /\b(total|grand total|amount payable|payable|subtotal|sub total|tax|gst|discount|change|balance|cash|card|upi|date|time|invoice|receipt|bill)\b/i;
+  const rows = [];
+  for (const rawLine of String(text || '').split(/\r?\n/)) {
+    const line = rawLine.replace(/\s+/g, ' ').trim();
+    if (line.length < 4 || line.length > 100 || totalWords.test(line)) continue;
+    const match = line.match(/^(.{3,65}?)\s+(?:₹|rs\.?|inr)?\s*([0-9][0-9,]*(?:\.\d{1,2})?)\s*$/i);
+    if (!match) continue;
+    const amount = Number(match[2].replace(/,/g, ''));
+    const label = match[1].trim();
+    if (!label || !Number.isFinite(amount) || amount <= 0 || amount > 10000000) continue;
+    if (/^\d+$/.test(label) || /^\d{1,2}[/-]\d{1,2}/.test(label)) continue;
+    rows.push({ label, amount });
+  }
+  const unique = [];
+  const seen = new Set();
+  rows.forEach(row => {
+    const key = `${row.label.toLowerCase()}|${row.amount}`;
+    if (!seen.has(key) && (receiptTotal === null || row.amount <= receiptTotal * 1.5)) {
+      seen.add(key); unique.push(row);
+    }
+  });
+  const panel = $('lineCandidatePanel');
+  const list = $('lineCandidateList');
+  if (!unique.length) { panel.hidden = true; list.innerHTML = ''; return; }
+  panel.hidden = false;
+  list.innerHTML = unique.slice(0, 6).map(row => `<div class="candidate-row"><span>${escapeHtml(row.label)}</span><strong>${formatMoney(row.amount)}</strong></div>`).join('');
+}
+
+function renderOcrQuality(confidence, text) {
+  const panel = $('ocrQualityPanel');
+  const value = Number(confidence);
+  panel.hidden = false;
+  if (!Number.isFinite(value)) {
+    $('ocrQualityBadge').className = 'badge badge-muted';
+    $('ocrQualityBadge').textContent = 'Unavailable';
+    $('ocrQualityBar').style.width = '0%';
+    $('ocrQualityHint').textContent = 'OCR confidence was not provided by the recognition engine. Review every extracted field manually.';
+    return;
+  }
+  const score = Math.max(0, Math.min(100, value));
+  $('ocrQualityBar').style.width = score + '%';
+  if (score >= 80) {
+    $('ocrQualityBadge').className = 'badge badge-success';
+    $('ocrQualityBadge').textContent = 'Good readability';
+    $('ocrQualityHint').textContent = 'Text recognition confidence is good. Still verify the total, date and category.';
+  } else if (score >= 60) {
+    $('ocrQualityBadge').className = 'badge badge-warning';
+    $('ocrQualityBadge').textContent = 'Review carefully';
+    $('ocrQualityHint').textContent = 'Some characters may be misread. Check similar digits, decimal points and the final amount.';
+  } else {
+    $('ocrQualityBadge').className = 'badge badge-danger';
+    $('ocrQualityBadge').textContent = 'Low readability';
+    $('ocrQualityHint').textContent = 'Try a sharper, brighter image with the receipt flat and all four edges visible. You can rotate and scan again.';
+  }
+  if (!String(text || '').trim()) $('ocrQualityHint').textContent += ' No readable text was found.';
+}
+
+function populateReview(text, confidence) {
+  lastOcrConfidence = Number.isFinite(Number(confidence)) ? Number(confidence) : null;
+  const merchant = findMerchant(text);
+  const amount = findAmount(text);
+  const date = findDate(text);
+  $('merchantInput').value = merchant;
+  $('titleInput').value = merchant ? `Purchase at ${merchant}` : 'Receipt purchase';
+  $('amountInput').value = amount !== null ? amount.toFixed(2) : '';
+  $('dateInput').value = date || localTodayISO();
+  const suggestions = renderCategorySuggestions(text);
+  if (suggestions.length) {
+    $('categoryInput').value = String(suggestions[0].category.id);
+    $('categoryHint').textContent = `Best match: ${suggestions[0].category.name || suggestions[0].category.group || suggestions[0].category.grp}. Suggestions are not guaranteed; verify before saving.`;
+  } else {
+    $('categoryInput').value = '';
+    $('categoryHint').textContent = categories.length
+      ? 'No confident category suggestion. Please select the correct category.'
+      : 'Categories could not be loaded. You can still review the extracted text.';
+  }
+  $('confidenceValue').textContent = Number.isFinite(Number(confidence)) ? `${Math.round(Number(confidence))}%` : 'Unavailable';
+  renderOcrQuality(confidence, text);
+  renderReceiptBreakdown(text);
+  renderLineCandidates(text, amount);
+  const missing = [];
+  if (!merchant) missing.push('merchant');
+  if (amount === null) missing.push('amount');
+  if (!date) missing.push('date');
+  if (Number(confidence) < 60) missing.push('low OCR confidence');
+  if (missing.length) {
+    showStatus($('reviewStatus'), `Extraction completed, but ${missing.join(', ')} needs attention. Enter or correct these fields manually before saving.`, 'warning');
+  } else {
+    showStatus($('reviewStatus'), 'Extraction completed. Review the receipt breakdown, category suggestions and all fields before saving.', 'success');
+  }
+}
+
+async function runOCR() {
+  if (!currentFile) return;
+  if (!window.Tesseract || typeof window.Tesseract.createWorker !== 'function') {
+    showStatus($('scanStatus'), 'OCR library did not load. Check your internet connection, reload the page and try again.', 'error');
+    return;
+  }
+  setBusy(true);
+  $('progressWrap').hidden = false;
+  $('progressBar').style.width = '0%';
+  $('progressPercent').textContent = '0%';
+  $('progressLabel').textContent = 'Preparing image…';
+  showStatus($('scanStatus'), 'Preparing your receipt for text recognition…');
+  try {
+    const image = await loadImage(previewUrl);
+    const canvas = preprocessForOCR(makeRotatedCanvas(image, rotation));
+    $('progressLabel').textContent = 'Loading English OCR model…';
+    ocrWorker = await Tesseract.createWorker('eng', 1, {
+      logger: message => {
+        if (message && typeof message.progress === 'number') {
+          const percent = Math.max(0, Math.min(100, Math.round(message.progress * 100)));
+          $('progressBar').style.width = percent + '%';
+          $('progressPercent').textContent = percent + '%';
+          if (message.status) $('progressLabel').textContent = message.status;
+        }
+      }
+    });
+    $('progressLabel').textContent = 'Reading receipt text…';
+    const result = await ocrWorker.recognize(canvas);
+    extractedText = (result && result.data && result.data.text ? result.data.text : '').trim();
+    $('ocrText').textContent = extractedText || 'No readable text found. Try a clearer or higher-resolution image.';
+    $('copyTextBtn').disabled = !extractedText;
+    $('progressBar').style.width = '100%';
+    $('progressPercent').textContent = '100%';
+    if (!extractedText) {
+      $('confidenceValue').textContent = '0%';
+      lastOcrConfidence = 0;
+      renderOcrQuality(0, '');
+      $('receiptBreakdown').hidden = true;
+      $('categorySuggestionPanel').hidden = true;
+      $('lineCandidatePanel').hidden = true;
+      showStatus($('scanStatus'), 'No readable text was detected. Try better lighting, a sharper image or rotate the receipt.', 'warning');
+      showStatus($('reviewStatus'), 'OCR did not detect readable text. You can still enter the receipt details manually.', 'warning');
+    } else {
+      const confidence = Number(result.data.confidence);
+      populateReview(extractedText, confidence);
+      showStatus($('scanStatus'), 'Receipt text extraction completed. Verify the fields on the right.', 'success');
+    }
+  } catch (error) {
+    console.error('Receipt OCR error:', error);
+    showStatus($('scanStatus'), error && error.message ? `OCR failed: ${error.message}` : 'OCR failed. Please try again with another image.', 'error');
+  } finally {
+    if (ocrWorker) {
+      try { await ocrWorker.terminate(); } catch (e) { console.warn('Could not close OCR worker:', e); }
+      ocrWorker = null;
+    }
+    setBusy(false);
+  }
+}
+
+async function loadCategories() {
+  try {
+    if (typeof API_CLIENT === 'undefined' || !API_CLIENT || typeof API_CLIENT.get !== 'function') {
+      throw new Error('API_CLIENT is unavailable. Check js/common.js.');
+    }
+    const response = await API_CLIENT.get('/categories');
+    categories = Array.isArray(response) ? response :
+      (Array.isArray(response && response.categories) ? response.categories :
+      (Array.isArray(response && response.data) ? response.data : []));
+    const select = $('categoryInput');
+    select.innerHTML = '<option value="">Select category…</option>';
+    const groups = {};
+    categories.forEach(category => {
+      if (!category || category.id === undefined || category.id === null) return;
+      const group = category.group || category.grp || 'Other';
+      (groups[group] = groups[group] || []).push(category);
+    });
+    Object.keys(groups).sort().forEach(groupName => {
+      const optgroup = document.createElement('optgroup');
+      optgroup.label = groupName;
+      groups[groupName].forEach(category => {
+        const option = document.createElement('option');
+        option.value = String(category.id);
+        option.textContent = `${category.icon || '📁'} ${category.name || 'Category ' + category.id}`;
+        optgroup.appendChild(option);
+      });
+      select.appendChild(optgroup);
+    });
+    if (!categories.length) $('categoryHint').textContent = 'No categories were returned by /categories. OCR still works; category selection will need checking.';
+    if (extractedText && categories.length) {
+      const currentSelection = $('categoryInput').value;
+      const suggestions = renderCategorySuggestions(extractedText);
+      if (currentSelection) $('categoryInput').value = currentSelection;
+      else if (suggestions.length) $('categoryInput').value = String(suggestions[0].category.id);
+    }
+  } catch (error) {
+    console.warn('Could not load receipt categories:', error);
+    $('categoryInput').innerHTML = '<option value="">Categories unavailable</option>';
+    $('categoryHint').textContent = 'Could not load /categories. You can still use OCR and review the extracted details.';
+  }
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
+}
+
+function formatMoney(value) {
+  const amount = Number(value) || 0;
+  return '₹' + amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatDate(value) {
+  if (!value) return '—';
+  const raw = String(value).slice(0, 10);
+  const parts = raw.split('-');
+  if (parts.length !== 3) return raw;
+  const date = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  return Number.isNaN(date.getTime()) ? raw : date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function localMonthISO(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function renderSmartInsights(data) {
+  const summary = data && data.summary ? data.summary : {};
+  const comparison = data && data.comparison ? data.comparison : {};
+  $('insightScanCount').textContent = String(Number(summary.scan_count) || 0);
+  $('insightTotalAmount').textContent = formatMoney(summary.total_amount);
+  $('insightAverageAmount').textContent = formatMoney(summary.average_amount);
+  if (comparison.percentage_change === null || comparison.percentage_change === undefined) {
+    $('insightChange').textContent = 'No baseline';
+  } else {
+    const direction = comparison.direction === 'up' ? '↑ ' : (comparison.direction === 'down' ? '↓ ' : '— ');
+    $('insightChange').textContent = direction + Math.abs(Number(comparison.percentage_change)).toFixed(1) + '%';
+  }
+  const messages = Array.isArray(data.insights) ? data.insights : [];
+  $('insightMessages').innerHTML = messages.length
+    ? messages.map(message => `<li>${escapeHtml(message)}</li>`).join('')
+    : '<li>No insights are available for this month yet.</li>';
+  const cats = Array.isArray(data.categories) ? data.categories : [];
+  $('insightCategories').innerHTML = cats.length
+    ? cats.slice(0, 5).map(item => `<span class="insight-tag">${escapeHtml(item.category_group || 'Uncategorized')}: ${formatMoney(item.total_amount)} (${Number(item.scan_count) || 0})</span>`).join('')
+    : 'No saved receipt categories this month.';
+  const merchants = Array.isArray(data.merchants) ? data.merchants : [];
+  $('insightMerchants').innerHTML = merchants.length
+    ? merchants.slice(0, 5).map(item => `<span class="insight-tag">${escapeHtml(item.merchant_name || 'Unknown')}: ${Number(item.scan_count) || 0} scan(s)</span>`).join('')
+    : 'No merchant history this month.';
+  $('insightStatus').textContent = `Insights for ${escapeHtml(data.month || localMonthISO())}. Totals include saved receipt scans only, not manually entered expenses.`;
+}
+
+async function loadInsights() {
+  const status = $('insightStatus');
+  status.textContent = 'Loading monthly receipt insights…';
+  try {
+    const data = await API_CLIENT.get('/receipt-scans/insights?month=' + encodeURIComponent(localMonthISO()));
+    renderSmartInsights(data || {});
+  } catch (error) {
+    console.error('Could not load receipt insights:', error);
+    $('insightScanCount').textContent = '—';
+    $('insightTotalAmount').textContent = '—';
+    $('insightAverageAmount').textContent = '—';
+    $('insightChange').textContent = '—';
+    $('insightMessages').innerHTML = '<li>Monthly insights are unavailable. Register the Phase 3 backend route to enable this section.</li>';
+    $('insightCategories').textContent = 'Unavailable';
+    $('insightMerchants').textContent = 'Unavailable';
+    status.textContent = error && error.message ? error.message : 'Could not load insights.';
+  }
+}
+
+function updateHistoryStats(items) {
+  const list = Array.isArray(items) ? items : [];
+  const total = list.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  $('scanCount').textContent = String(list.length);
+  $('savedCount').textContent = String(list.filter(item => item.status === 'saved' || item.expense_id).length);
+  $('scannedAmount').textContent = formatMoney(total);
+}
+
+function renderHistory(items) {
+  const list = Array.isArray(items) ? items : [];
+  const container = $('receiptHistory');
+  updateHistoryStats(list);
+  if (!list.length) {
+    container.innerHTML = '<div class="scanner-help" style="padding:16px 0">No receipt scans saved yet. Upload a receipt and save it as an expense to see it here.</div>';
+    return;
+  }
+  container.innerHTML = list.map(item => {
+    const category = item.category_name || item.category || 'Category';
+    const title = item.expense_title || item.title || 'Receipt expense';
+    const merchant = item.merchant_name || '';
+    const status = item.status || (item.expense_id ? 'saved' : 'recorded');
+    return `<div class="history-row" style="display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--border);flex-wrap:wrap">
+      <div style="font-size:1.4rem">🧾</div>
+      <div style="flex:1;min-width:150px">
+        <div style="font-weight:700;font-size:.9rem">${escapeHtml(title)}</div>
+        <div class="scanner-help">${escapeHtml(merchant)}${merchant ? ' · ' : ''}${escapeHtml(category)} · ${escapeHtml(formatDate(item.expense_date || item.date))}</div>
+      </div>
+      <div style="font-weight:750">${formatMoney(item.amount)}</div>
+      <span class="badge badge-success">${escapeHtml(status)}</span>
+    </div>`;
+  }).join('');
+}
+
+async function loadHistory() {
+  const status = $('historyStatus');
+  status.textContent = 'Loading saved receipt history…';
+  try {
+    const response = await API_CLIENT.get('/receipt-scans');
+    receiptHistory = Array.isArray(response) ? response :
+      (Array.isArray(response && response.scans) ? response.scans :
+      (Array.isArray(response && response.data) ? response.data : []));
+    renderHistory(receiptHistory);
+    status.textContent = 'Showing your latest saved receipt scans.';
+  } catch (error) {
+    console.error('Receipt history load failed:', error);
+    status.textContent = 'Receipt history is unavailable. Check the Phase 2 receipt_scans table and backend route registration.';
+    $('receiptHistory').innerHTML = '<div class="scanner-help">Expense saving can still work independently, but receipt history requires the Phase 2 database table and routes.</div>';
+    updateHistoryStats([]);
+  }
+  await loadInsights();
+}
+
+async function sha256File(file) {
+  if (!window.crypto || !window.crypto.subtle || typeof file.arrayBuffer !== 'function') {
+    throw new Error('Secure SHA-256 hashing is unavailable. Open Finlumiq using localhost/127.0.0.1 or HTTPS, not file://.');
+  }
+  const bytes = await file.arrayBuffer();
+  const digest = await window.crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function validateReceiptForm() {
+  const merchant = $('merchantInput').value.trim();
+  const title = $('titleInput').value.trim();
+  const amount = Number($('amountInput').value);
+  const date = $('dateInput').value;
+  const categoryId = Number.parseInt($('categoryInput').value, 10);
+
+  if (!currentFile) throw new Error('Upload or capture a receipt image first.');
+  if (!title) throw new Error('Enter an expense title.');
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error('Enter an amount greater than zero.');
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('Select a valid expense date.');
+  const parsedDate = new Date(date + 'T00:00:00');
+  if (Number.isNaN(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== date) throw new Error('The expense date is invalid.');
+  if (!Number.isInteger(categoryId) || categoryId <= 0) throw new Error('Select a category.');
+  const categoryExists = categories.some(category => Number(category.id) === categoryId);
+  if (!categoryExists) throw new Error('The selected category is not available. Refresh categories and select a valid category.');
+  return {
+    merchant_name: merchant,
+    title,
+    amount: Math.round(amount * 100) / 100,
+    category_id: categoryId,
+    date,
+    notes: $('notesInput').value.trim(),
+    extracted_text: extractedText.slice(0, 20000)
+  };
+}
+
+async function saveReceiptHistory(payload) {
+  await API_CLIENT.post('/receipt-scans', payload);
+  pendingHistory = null;
+  showStatus($('reviewStatus'), 'Expense and receipt scan history saved successfully.', 'success');
+  if (typeof showToast === 'function') showToast('Receipt saved as an expense!', 'success');
+  await loadHistory();
+  resetPage();
+}
+
+async function handleSaveExpense(event) {
+  event.preventDefault();
+  if (saving) return;
+  const button = $('saveExpenseBtn');
+  saving = true;
+  button.disabled = true;
+  button.textContent = pendingHistory ? 'Saving receipt history…' : 'Checking…';
+
+  try {
+    // If the expense was already created but history saving failed, retry history only.
+    if (pendingHistory) {
+      await saveReceiptHistory(pendingHistory);
+      return;
+    }
+
+    const form = validateReceiptForm();
+    const imageHash = await sha256File(currentFile);
+    const duplicatePayload = {
+      image_hash: imageHash,
+      title: form.title,
+      amount: form.amount,
+      category_id: form.category_id,
+      date: form.date
+    };
+
+    button.textContent = 'Checking duplicate…';
+    let duplicateResult;
+    try {
+      duplicateResult = await API_CLIENT.post('/receipt-scans/check-duplicate', duplicatePayload);
+    } catch (error) {
+      throw new Error('Duplicate check could not run. Confirm that the Phase 2 backend routes and receipt_scans table are installed. ' + (error.message || ''));
+    }
+
+    if (duplicateResult && duplicateResult.duplicate) {
+      showStatus($('reviewStatus'), 'This exact receipt image has already been saved. No new expense was created.', 'warning');
+      return;
+    }
+
+    if (duplicateResult && duplicateResult.possible_duplicate) {
+      const details = duplicateResult.match ?
+        `\nExisting expense: ${duplicateResult.match.title || 'Expense'} · ${formatMoney(duplicateResult.match.amount)} · ${formatDate(duplicateResult.match.expense_date)}` : '';
+      const proceed = window.confirm('A similar expense already exists for the same date, amount and category.' + details + '\n\nSave this receipt anyway?');
+      if (!proceed) {
+        showStatus($('reviewStatus'), 'Save cancelled. No new expense was created.', 'warning');
+        return;
+      }
+    }
+
+    button.textContent = 'Saving expense…';
+    const savedExpense = await API_CLIENT.post('/expenses', {
+      title: form.title,
+      amount: form.amount,
+      category_id: form.category_id,
+      date: form.date
+    });
+
+    const savedId = savedExpense && (
+      savedExpense.id ?? savedExpense.expense_id ??
+      (savedExpense.expense && savedExpense.expense.id) ??
+      (savedExpense.data && savedExpense.data.id)
+    );
+
+    pendingHistory = {
+      expense_id: savedId ? Number(savedId) : null,
+      merchant_name: form.merchant_name,
+      expense_title: form.title,
+      amount: form.amount,
+      category_id: form.category_id,
+      expense_date: form.date,
+      image_hash: imageHash,
+      extracted_text: form.extracted_text,
+      notes: form.notes
+    };
+
+    button.textContent = 'Saving history…';
+    try {
+      await saveReceiptHistory(pendingHistory);
+    } catch (historyError) {
+      console.error('Expense saved but receipt history failed:', historyError);
+      showStatus($('reviewStatus'), 'The expense was saved successfully, but receipt history could not be saved. Do not submit the expense again. Click “Retry receipt history save” to finish.', 'warning');
+      button.textContent = 'Retry receipt history save';
+      button.disabled = false;
+      $('browseBtn').disabled = true;
+      $('cameraBtn').disabled = true;
+      $('rotateBtn').disabled = true;
+      $('removeBtn').disabled = true;
+    }
+  } catch (error) {
+    console.error('Receipt save failed:', error);
+    showStatus($('reviewStatus'), error.message || 'Could not save this receipt. Please try again.', 'error');
+  } finally {
+    saving = false;
+    if (!pendingHistory) {
+      button.disabled = !currentFile;
+      button.textContent = '💾 Save as Expense';
+    } else {
+      button.disabled = false;
+    }
+  }
+}
+
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop());
+    cameraStream = null;
+  }
+  const video = $('cameraVideo');
+  if (video) video.srcObject = null;
+  $('capturePhotoBtn').disabled = true;
+}
+
+function closeCamera() {
+  stopCamera();
+  $('cameraModal').hidden = true;
+  cameraStarting = false;
+}
+
+async function startCameraStream() {
+  if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+    throw new Error('Live camera access is unavailable in this browser or page context. Open Finlumiq through http://localhost, http://127.0.0.1, or HTTPS and use a supported browser.');
+  }
+
+  stopCamera();
+  $('cameraMessage').textContent = 'Requesting camera permission…';
+
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: {
+        facingMode: { ideal: cameraFacingMode },
+        width: { ideal: 1920 },
+        height: { ideal: 1080 }
+      }
+    });
+  } catch (firstError) {
+    // Some desktop cameras do not support facingMode constraints. Retry without them.
+    if (firstError && (firstError.name === 'OverconstrainedError' || firstError.name === 'ConstraintNotSatisfiedError')) {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
+    } else {
+      throw firstError;
+    }
+  }
+
+  cameraStream = stream;
+  const video = $('cameraVideo');
+  video.srcObject = stream;
+  video.muted = true;
+  video.playsInline = true;
+  await video.play();
+
+  if (!video.videoWidth || !video.videoHeight) {
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('Camera started but no video frame arrived. Check the camera and try again.')), 8000);
+      video.addEventListener('loadedmetadata', () => { clearTimeout(timer); resolve(); }, { once: true });
+    });
+  }
+
+  $('cameraMessage').textContent = 'Camera is ready. Position the full receipt inside the frame, then capture the photo.';
+  $('capturePhotoBtn').disabled = false;
+}
+
+async function openCamera() {
+  if (cameraStarting || pendingHistory || saving) return;
+  cameraStarting = true;
+  $('cameraModal').hidden = false;
+  $('cameraMessage').textContent = 'Starting your device camera…';
+  $('capturePhotoBtn').disabled = true;
+  try {
+    await startCameraStream();
+  } catch (error) {
+    console.error('Could not open device camera:', error);
+    closeCamera();
+    const reason = error && error.name === 'NotAllowedError'
+      ? 'Camera permission was denied. Allow camera access in your browser site settings, then try again.'
+      : error && error.name === 'NotFoundError'
+        ? 'No camera was found on this device. Use Browse Files to select a receipt image.'
+        : error && error.name === 'NotReadableError'
+          ? 'The camera is busy in another app. Close other camera apps and try again.'
+          : (error && error.message) || 'Could not start the camera. Check your browser permissions and try again.';
+    showStatus($('scanStatus'), reason, 'error');
+  } finally {
+    cameraStarting = false;
+  }
+}
+
+async function switchCamera() {
+  if (!cameraStream || cameraStarting) return;
+  cameraStarting = true;
+  cameraFacingMode = cameraFacingMode === 'environment' ? 'user' : 'environment';
+  $('capturePhotoBtn').disabled = true;
+  try {
+    await startCameraStream();
+  } catch (error) {
+    console.warn('Could not switch camera:', error);
+    cameraFacingMode = cameraFacingMode === 'environment' ? 'user' : 'environment';
+    $('cameraMessage').textContent = 'Could not switch cameras. The current camera may be the only available camera.';
+    if (cameraStream) $('capturePhotoBtn').disabled = false;
+  } finally {
+    cameraStarting = false;
+  }
+}
+
+async function captureCameraPhoto() {
+  const video = $('cameraVideo');
+  if (!cameraStream || !video.videoWidth || !video.videoHeight) {
+    $('cameraMessage').textContent = 'The camera is not ready yet. Please wait and try again.';
+    return;
+  }
+
+  const canvas = $('cameraCanvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const context = canvas.getContext('2d');
+  if (!context) {
+    $('cameraMessage').textContent = 'Could not capture this photo. Please try again.';
+    return;
+  }
+
+  context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  $('capturePhotoBtn').disabled = true;
+  $('cameraMessage').textContent = 'Preparing your receipt photo…';
+
+  canvas.toBlob(blob => {
+    if (!blob) {
+      $('capturePhotoBtn').disabled = false;
+      $('cameraMessage').textContent = 'Photo capture failed. Please try again.';
+      return;
+    }
+    const file = new File([blob], `receipt-camera-${Date.now()}.jpg`, { type: 'image/jpeg', lastModified: Date.now() });
+    closeCamera();
+    acceptFile(file);
+  }, 'image/jpeg', 0.92);
+}
+
+async function init() {
+  try {
+    if (typeof requireAuth === 'function') {
+      const user = await requireAuth();
+      if (typeof buildNav === 'function') buildNav('receipt-scanner', user);
+    } else {
+      throw new Error('Authentication helper was not found. Check js/common.js.');
+    }
+    await Promise.allSettled([loadCategories(), loadHistory()]);
+  } catch (error) {
+    console.error('Receipt Scanner initialization error:', error);
+    showStatus($('scanStatus'), error.message || 'Could not initialize the Receipt Scanner.', 'error');
+  }
+}
+
+$('browseBtn').addEventListener('click', () => $('receiptFile').click());
+$('uploadZone').addEventListener('click', event => {
+  if (event.target.closest('button')) return;
+  $('receiptFile').click();
+});
+$('uploadZone').addEventListener('keydown', event => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    $('receiptFile').click();
+  }
+});
+$('receiptFile').addEventListener('change', event => acceptFile(event.target.files && event.target.files[0]));
+$('cameraBtn').addEventListener('click', openCamera);
+$('closeCameraBtn').addEventListener('click', closeCamera);
+$('capturePhotoBtn').addEventListener('click', captureCameraPhoto);
+$('switchCameraBtn').addEventListener('click', switchCamera);
+$('cameraModal').addEventListener('click', event => { if (event.target === $('cameraModal')) closeCamera(); });
+document.addEventListener('keydown', event => { if (event.key === 'Escape' && !$('cameraModal').hidden) closeCamera(); });
+$('rotateBtn').addEventListener('click', () => {
+  if (!currentFile) return;
+  rotation = (rotation + 90) % 360;
+  $('receiptPreview').style.transform = `rotate(${rotation}deg)`;
+});
+$('removeBtn').addEventListener('click', clearImage);
+$('resetBtn').addEventListener('click', resetPage);
+$('scanBtn').addEventListener('click', runOCR);
+$('reviewForm').addEventListener('submit', handleSaveExpense);
+$('refreshHistoryBtn').addEventListener('click', loadHistory);
+$('refreshInsightsBtn').addEventListener('click', loadInsights);
+$('copyTextBtn').addEventListener('click', async () => {
+  if (!extractedText) return;
+  try {
+    await navigator.clipboard.writeText(extractedText);
+    if (typeof showToast === 'function') showToast('Extracted text copied.', 'success');
+    else showStatus($('scanStatus'), 'Extracted text copied.', 'success');
+  } catch (error) {
+    showStatus($('scanStatus'), 'Could not access the clipboard. Select and copy the extracted text manually.', 'warning');
+  }
+});
+
+['dragenter','dragover'].forEach(name => $('uploadZone').addEventListener(name, event => {
+  event.preventDefault();
+  $('uploadZone').classList.add('dragover');
+}));
+['dragleave','drop'].forEach(name => $('uploadZone').addEventListener(name, event => {
+  event.preventDefault();
+  $('uploadZone').classList.remove('dragover');
+}));
+$('uploadZone').addEventListener('drop', event => {
+  const file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+  acceptFile(file);
+});
+$('dateInput').value = localTodayISO();
+window.addEventListener('beforeunload', () => { closeCamera(); revokePreview(); });
+init();
+</script>
+</body>
+</html>

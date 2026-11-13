@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>College Fees — Finlumiq</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div id="appNav"></div>
+<header class="topbar">
+  <a class="topbar-brand" href="dashboard.html"><div class="topbar-logo">🎓</div><span class="topbar-title">Finlumiq</span></a>
+  <div class="topbar-right">
+    <span class="topbar-page-title">College Fees</span>
+    <button class="theme-toggle-btn">🌙</button>
+    <button id="navOpenBtn" class="nav-open-btn">☰</button>
+  </div>
+</header>
+
+<main class="page-wrap">
+  <div class="page-header">
+    <div class="page-header-left"><h1>🏫 College Fees</h1><p>Track all your college fee payments.</p></div>
+    <button class="btn btn-primary" id="addFeeBtn">+ Add Fee</button>
+  </div>
+
+  <div class="stat-cards">
+    <div class="stat-card"><div class="stat-label">Total Fees</div><div class="stat-icon">🏫</div><div class="stat-value" id="sTotal">₹0</div></div>
+    <div class="stat-card success"><div class="stat-label">Total Paid</div><div class="stat-icon">✅</div><div class="stat-value" id="sPaid">₹0</div></div>
+    <div class="stat-card warning"><div class="stat-label">Pending</div><div class="stat-icon">⏳</div><div class="stat-value" id="sPending">₹0</div></div>
+    <div class="stat-card danger"><div class="stat-label">Overdue</div><div class="stat-icon">🚨</div><div class="stat-value" id="sOverdue">0</div></div>
+  </div>
+
+  <div class="card mb-24">
+    <div class="filter-bar" style="margin-bottom:0;flex-wrap:wrap;">
+      <div class="form-group"><label class="form-label">Status</label>
+        <select id="statusFilter" class="form-control" style="width:150px;">
+          <option value="">All</option><option>Pending</option><option>Partially Paid</option><option>Paid</option><option>Overdue</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Semester</label>
+        <select id="semFilter" class="form-control" style="width:180px;"><option value="">All Semesters</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Category</label>
+        <select id="catFilter" class="form-control" style="width:160px;">
+          <option value="">All Categories</option>
+          <option>Tuition</option><option>Examination</option><option>Hostel</option>
+          <option>Transport</option><option>Library</option><option>Laboratory</option>
+          <option>Admission</option><option>Other</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Fee Title</th><th>Category</th><th>Semester</th><th>Due Date</th><th>Total</th><th>Paid</th><th>Remaining</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="feesTbody"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<!-- Add/Edit Fee Modal -->
+<div id="feeModal" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="feeModalTitle">Add Fee</span><button class="modal-close" id="feeModalClose">✕</button></div>
+    <div class="modal-body">
+      <form id="feeForm" novalidate>
+        <input type="hidden" id="feeId">
+        <div class="form-grid form-grid-2" style="gap:14px;">
+          <div class="form-group" style="grid-column:1/-1;"><label class="form-label">Fee Title *</label><input id="feeName" type="text" class="form-control" placeholder="e.g. Semester 3 Tuition Fee" required></div>
+          <div class="form-group"><label class="form-label">Category *</label>
+            <select id="feeCat" class="form-control" required>
+              <option value="">Select…</option><option>Tuition</option><option>Examination</option>
+              <option>Hostel</option><option>Transport</option><option>Library</option>
+              <option>Laboratory</option><option>Admission</option><option>Other</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Semester</label>
+            <select id="feeSemId" class="form-control"><option value="">None</option></select>
+          </div>
+          <div class="form-group"><label class="form-label">Total Amount (₹) *</label><input id="feeTotal" type="number" class="form-control" placeholder="0.00" min="0.01" step="0.01" required></div>
+          <div class="form-group"><label class="form-label">Due Date *</label><input id="feeDue" type="date" class="form-control" required></div>
+          <div class="form-group" style="grid-column:1/-1;"><label class="form-label">Description</label><textarea id="feeDesc" class="form-control" rows="2" placeholder="Optional notes…"></textarea></div>
+        </div>
+        <div id="feeErr" class="auth-message error mt-8" hidden></div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="feeCancelBtn">Cancel</button>
+      <button class="btn btn-primary" id="feeSaveBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Record Payment Modal -->
+<div id="payModal" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="payModalTitle">Record Payment</span><button class="modal-close" id="payModalClose">✕</button></div>
+    <div class="modal-body">
+      <div id="payFeeInfo" class="alert alert-info mb-16" style="font-size:0.88rem;"></div>
+      <form id="payForm" novalidate>
+        <input type="hidden" id="payFeeId">
+        <div class="form-grid form-grid-2" style="gap:14px;">
+          <div class="form-group"><label class="form-label">Amount Paid (₹) *</label><input id="payAmount" type="number" class="form-control" placeholder="0.00" min="0.01" step="0.01" required></div>
+          <div class="form-group"><label class="form-label">Payment Date *</label><input id="payDate" type="date" class="form-control" required></div>
+          <div class="form-group"><label class="form-label">Payment Method</label>
+            <select id="payMethod" class="form-control">
+              <option>Cash</option><option>UPI</option><option>Bank Transfer</option><option>Card</option><option>Other</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Transaction Reference</label><input id="payRef" type="text" class="form-control" placeholder="Optional"></div>
+          <div class="form-group" style="grid-column:1/-1;"><label class="form-label">Remarks</label><textarea id="payRemarks" class="form-control" rows="2" placeholder="Optional notes…"></textarea></div>
+        </div>
+        <div id="payErr" class="auth-message error mt-8" hidden></div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="payCancelBtn">Cancel</button>
+      <button class="btn btn-success" id="paySaveBtn">Record Payment</button>
+    </div>
+  </div>
+</div>
+
+<!-- Payment History Modal -->
+<div id="histModal" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="histTitle">Payment History</span><button class="modal-close" id="histClose">✕</button></div>
+    <div class="modal-body"><div id="histContent"></div></div>
+    <div class="modal-footer"><button class="btn btn-secondary" id="histCloseBtn">Close</button></div>
+  </div>
+</div>
+
+<div id="confirmModal" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal"><div class="modal-body" style="text-align:center;padding:32px 24px;"><div style="font-size:3rem;margin-bottom:16px;">⚠️</div><div id="confirmTitle" style="font-weight:700;margin-bottom:8px;font-size:1.1rem;"></div><div id="confirmBody" style="color:var(--muted);"></div></div>
+  <div class="modal-footer"><button id="confirmNo" class="btn btn-secondary">Cancel</button><button id="confirmYes" class="btn btn-danger">Delete</button></div></div>
+</div>
+
+<script src="js/common.js"></script>
+<script src="js/nav.js"></script>
+<script>
+initTheme();
+let allFees=[], semesters=[];
+
+async function init(){
+  const user=await requireAuth(); buildNav('college-fees',user);
+  document.getElementById('payDate').value=todayISO();
+  semesters=await API_CLIENT.get('/semesters').catch(()=>[]);
+  // populate semester dropdowns
+  ['semFilter','feeSemId'].forEach(id=>{
+    const sel=document.getElementById(id);
+    semesters.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.semester_name+' ('+s.academic_year+')';sel.appendChild(o);});
+  });
+  loadFees();
+}
+
+async function loadFees(){
+  let url='/fees';
+  const params=[];
+  const sem=document.getElementById('semFilter').value;
+  const cat=document.getElementById('catFilter').value;
+  if(sem) params.push('semester_id='+sem);
+  if(cat) params.push('category='+encodeURIComponent(cat));
+  if(params.length) url+='?'+params.join('&');
+  try{
+    allFees=await API_CLIENT.get(url);
+    renderTable();
+    renderStats();
+  }catch(e){showToast(e.message,'error');}
+}
+
+function getFiltered(){
+  const st=document.getElementById('statusFilter').value;
+  return st?allFees.filter(f=>f.status===st):allFees;
+}
+
+const STATUS_BADGE={Paid:'badge-success','Partially Paid':'badge-warning',Overdue:'badge-danger',Pending:'badge-muted'};
+
+function renderTable(){
+  const data=getFiltered();
+  const tbody=document.getElementById('feesTbody');
+  if(!data.length){tbody.innerHTML=`<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">🏫</div><h3>No fees found</h3><p>Add a college fee to start tracking.</p></div></td></tr>`;return;}
+  tbody.innerHTML=data.map(f=>{
+    const overdue=f.status==='Overdue';
+    return `<tr>
+      <td class="fw-semi">${escapeHtml(f.fee_title)}</td>
+      <td><span class="badge badge-info">${f.fee_category}</span></td>
+      <td class="text-muted" style="font-size:0.82rem;">${f.semester_name||'—'}</td>
+      <td class="${overdue?'text-danger fw-semi':''}">${formatDate(f.due_date)}</td>
+      <td class="fw-bold">${money(f.total_amount)}</td>
+      <td class="text-success">${money(f.paid)}</td>
+      <td class="${f.remaining>0?'text-warning fw-semi':''}">${money(f.remaining)}</td>
+      <td><span class="badge ${STATUS_BADGE[f.status]||'badge-muted'}">${f.status}</span></td>
+      <td style="white-space:nowrap;">
+        ${f.status!=='Paid'?`<button class="btn btn-sm btn-success" onclick="openPay(${f.id})" title="Record Payment">💳</button> `:''}
+        <button class="btn btn-sm btn-secondary" onclick="showHistory(${f.id},'${escapeHtml(f.fee_title)}')" title="Payment History">📋</button>
+        <button class="btn btn-sm btn-secondary" onclick="openEdit(${f.id})" title="Edit">✏️</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteFee(${f.id},'${escapeHtml(f.fee_title)}')" title="Delete">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderStats(){
+  const data=allFees;
+  const total=data.reduce((s,f)=>s+f.total_amount,0);
+  const paid=data.reduce((s,f)=>s+f.paid,0);
+  const pending=data.reduce((s,f)=>s+f.remaining,0);
+  const overdue=data.filter(f=>f.status==='Overdue').length;
+  document.getElementById('sTotal').textContent=money(total);
+  document.getElementById('sPaid').textContent=money(paid);
+  document.getElementById('sPending').textContent=money(pending);
+  document.getElementById('sOverdue').textContent=overdue;
+}
+
+// Add/Edit Fee Modal
+function openAdd(){document.getElementById('feeModalTitle').textContent='Add Fee';document.getElementById('feeId').value='';document.getElementById('feeForm').reset();document.getElementById('feeErr').hidden=true;document.getElementById('feeModal').classList.add('active');}
+function openEdit(id){
+  const f=allFees.find(x=>x.id===id);if(!f)return;
+  document.getElementById('feeModalTitle').textContent='Edit Fee';
+  document.getElementById('feeId').value=id;
+  document.getElementById('feeName').value=f.fee_title;
+  document.getElementById('feeCat').value=f.fee_category;
+  document.getElementById('feeSemId').value=f.semester_id||'';
+  document.getElementById('feeTotal').value=f.total_amount;
+  document.getElementById('feeDue').value=f.due_date;
+  document.getElementById('feeDesc').value=f.description||'';
+  document.getElementById('feeErr').hidden=true;
+  document.getElementById('feeModal').classList.add('active');
+}
+function closeModal(id){document.getElementById(id).classList.remove('active');}
+document.getElementById('addFeeBtn').addEventListener('click',openAdd);
+document.getElementById('feeModalClose').addEventListener('click',()=>closeModal('feeModal'));
+document.getElementById('feeCancelBtn').addEventListener('click',()=>closeModal('feeModal'));
+
+document.getElementById('feeSaveBtn').addEventListener('click',async()=>{
+  const id=document.getElementById('feeId').value;
+  const payload={
+    fee_title:document.getElementById('feeName').value.trim(),
+    fee_category:document.getElementById('feeCat').value,
+    semester_id:document.getElementById('feeSemId').value||null,
+    total_amount:parseFloat(document.getElementById('feeTotal').value)||0,
+    due_date:document.getElementById('feeDue').value,
+    description:document.getElementById('feeDesc').value.trim()
+  };
+  const errEl=document.getElementById('feeErr');
+  if(!payload.fee_title||!payload.fee_category||!payload.total_amount||!payload.due_date){errEl.textContent='Please fill all required fields.';errEl.hidden=false;return;}
+  const btn=document.getElementById('feeSaveBtn');btn.disabled=true;btn.textContent='Saving…';
+  try{
+    if(id) await API_CLIENT.put('/fees/'+id,payload);
+    else    await API_CLIENT.post('/fees',payload);
+    showToast(id?'Fee updated!':'Fee added!','success');
+    closeModal('feeModal'); loadFees();
+  }catch(e){errEl.textContent=e.message;errEl.hidden=false;}
+  finally{btn.disabled=false;btn.textContent='Save';}
+});
+
+// Payment Modal
+function openPay(id){
+  const f=allFees.find(x=>x.id===id);if(!f)return;
+  document.getElementById('payFeeId').value=id;
+  document.getElementById('payModalTitle').textContent='Pay — '+f.fee_title;
+  document.getElementById('payFeeInfo').textContent=`Outstanding: ${money(f.remaining)} of ${money(f.total_amount)} total`;
+  document.getElementById('payForm').reset();
+  document.getElementById('payDate').value=todayISO();
+  document.getElementById('payErr').hidden=true;
+  document.getElementById('payModal').classList.add('active');
+}
+document.getElementById('payModalClose').addEventListener('click',()=>closeModal('payModal'));
+document.getElementById('payCancelBtn').addEventListener('click',()=>closeModal('payModal'));
+
+document.getElementById('paySaveBtn').addEventListener('click',async()=>{
+  const feeId=document.getElementById('payFeeId').value;
+  const payload={
+    amount_paid:parseFloat(document.getElementById('payAmount').value)||0,
+    payment_date:document.getElementById('payDate').value,
+    payment_method:document.getElementById('payMethod').value,
+    transaction_reference:document.getElementById('payRef').value.trim(),
+    remarks:document.getElementById('payRemarks').value.trim()
+  };
+  const errEl=document.getElementById('payErr');
+  if(!payload.amount_paid||!payload.payment_date){errEl.textContent='Please fill required fields.';errEl.hidden=false;return;}
+  const btn=document.getElementById('paySaveBtn');btn.disabled=true;btn.textContent='Recording…';
+  try{
+    await API_CLIENT.post('/fees/'+feeId+'/payments',payload);
+    showToast('Payment recorded!','success');
+    closeModal('payModal'); loadFees();
+  }catch(e){errEl.textContent=e.message;errEl.hidden=false;}
+  finally{btn.disabled=false;btn.textContent='Record Payment';}
+});
+
+// History
+async function showHistory(feeId,feeName){
+  document.getElementById('histTitle').textContent='Payments — '+feeName;
+  document.getElementById('histModal').classList.add('active');
+  document.getElementById('histContent').innerHTML='<div class="loading-state"><div class="spinner"></div></div>';
+  try{
+    const payments=await API_CLIENT.get('/fees/'+feeId+'/payments');
+    if(!payments.length){document.getElementById('histContent').innerHTML='<div class="empty-state" style="padding:24px;"><div class="empty-icon">📋</div><p>No payments yet.</p></div>';return;}
+    document.getElementById('histContent').innerHTML=`<div class="table-wrap"><table class="table">
+      <thead><tr><th>Date</th><th>Method</th><th style="text-align:right;">Amount</th><th>Reference</th></tr></thead>
+      <tbody>${payments.map(p=>`<tr>
+        <td>${formatDate(p.payment_date)}</td>
+        <td><span class="badge badge-info">${p.payment_method}</span></td>
+        <td style="text-align:right;" class="fw-bold text-success">${money(p.amount_paid)}</td>
+        <td class="text-muted" style="font-size:0.82rem;">${escapeHtml(p.transaction_reference||p.remarks||'—')}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+  }catch(e){document.getElementById('histContent').innerHTML='<div class="text-danger">'+e.message+'</div>';}
+}
+document.getElementById('histClose').addEventListener('click',()=>closeModal('histModal'));
+document.getElementById('histCloseBtn').addEventListener('click',()=>closeModal('histModal'));
+
+async function deleteFee(id,name){
+  const ok=await confirm2('Delete fee "'+name+'" and all its payments?','Delete Fee');
+  if(!ok)return;
+  try{await API_CLIENT.del('/fees/'+id);showToast('Deleted.','success');loadFees();}
+  catch(e){showToast(e.message,'error');}
+}
+
+['statusFilter','semFilter','catFilter'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{
+  if(id==='semFilter'||id==='catFilter') loadFees(); else {renderTable();renderStats();}
+}));
+init();
+</script>
+</body>
+</html>

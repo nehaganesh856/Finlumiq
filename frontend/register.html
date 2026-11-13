@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create Account — Finlumiq</title>
+<meta name="description" content="Create your free Finlumiq account and start managing your student finances.">
+<link rel="stylesheet" href="css/auth.css">
+</head>
+<body>
+
+<div class="auth-bg"><div class="blob-accent"></div></div>
+<button class="theme-btn" id="themeBtn">🌙 Dark</button>
+
+<div class="auth-page">
+  <div class="auth-card-centered">
+
+    <a href="login.html" class="auth-logo">
+      <div class="auth-logo-icon">🎓</div>
+      <span class="auth-logo-text">Finlumiq</span>
+    </a>
+
+    <!-- State: Registration form -->
+    <div id="registerState">
+      <h1 class="auth-title">Create account</h1>
+      <p class="auth-sub">Start tracking your student finances for free.</p>
+
+      <div id="alertBox"></div>
+
+      <!-- Google -->
+      <button class="btn-google" id="googleBtn" type="button">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path fill="#4285F4" d="M44.5 20H24v8.5h11.8C34.7 33.9 29.8 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.5 0 20-7.6 20-21 0-1.4-.1-2.7-.5-4z"/>
+          <path fill="#34A853" d="M6.3 14.7l7 5.1C15 16.1 19.1 13 24 13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 5.1 29.6 3 24 3c-7.9 0-14.7 4.6-17.7 11.7z"/>
+          <path fill="#FBBC05" d="M24 45c5.5 0 10.5-1.9 14.4-5l-6.7-5.4C29.8 36.3 27 37 24 37c-5.7 0-10.6-3.1-11.8-7.5l-7 5.4C8.1 41 15.5 45 24 45z"/>
+          <path fill="#EA4335" d="M44.5 20H24v8.5h11.8c-.6 2.3-2 4.4-3.9 5.9l6.7 5.4C42.6 36.1 45 30.6 45 24c0-1.4-.1-2.7-.5-4z"/>
+        </svg>
+        Continue with Google
+      </button>
+
+      <div class="auth-divider">or register with email</div>
+
+      <form id="registerForm" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="regName">Full Name</label>
+          <div class="input-wrap">
+            <span class="input-icon">👤</span>
+            <input id="regName" type="text" class="form-input has-icon"
+              placeholder="Your full name" autocomplete="name" required>
+          </div>
+          <div class="field-error" id="regNameErr"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="regEmail">Email Address</label>
+          <div class="input-wrap">
+            <span class="input-icon">✉️</span>
+            <input id="regEmail" type="email" class="form-input has-icon"
+              placeholder="you@gmail.com" autocomplete="email" required>
+          </div>
+          <div class="field-error" id="regEmailErr"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="regPassword">Password</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input id="regPassword" type="password" class="form-input has-icon has-toggle"
+              placeholder="Min. 8 characters" autocomplete="new-password" required>
+            <button type="button" class="pw-toggle" id="regPwToggle" title="Show password">👁️</button>
+          </div>
+          <div class="strength-wrap">
+            <div class="strength-track"><div class="strength-fill" id="strengthFill"></div></div>
+            <span class="strength-label" id="strengthLabel"></span>
+          </div>
+          <div class="field-error" id="regPwErr"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="regConfirm">Confirm Password</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input id="regConfirm" type="password" class="form-input has-icon has-toggle"
+              placeholder="Repeat your password" autocomplete="new-password" required>
+            <button type="button" class="pw-toggle" id="regConfirmToggle" title="Show password">👁️</button>
+          </div>
+          <div class="field-error" id="regConfirmErr"></div>
+        </div>
+
+        <div class="check-row">
+          <input type="checkbox" id="termsCheck" required>
+          <label for="termsCheck">
+            I agree to the <a href="#" onclick="return false;">Terms of Service</a>
+            and <a href="#" onclick="return false;">Privacy Policy</a>
+          </label>
+        </div>
+
+        <button type="submit" class="btn-primary" id="registerBtn">Create Account</button>
+      </form>
+
+      <div class="auth-footer-link">
+        Already have an account? <a href="login.html">Sign in</a>
+      </div>
+    </div>
+
+    <!-- State: Check email (shown after successful registration) -->
+    <div id="checkEmailState" style="display:none; text-align:center;">
+      <div class="status-icon">📬</div>
+      <div class="status-title">Check your inbox!</div>
+      <p class="status-sub">
+        We've sent a verification email to<br>
+        <strong id="sentToEmail"></strong><br><br>
+        Click the link in that email to activate your account.
+        The link expires in <strong>30 minutes</strong>.
+      </p>
+      <div id="mailWarning"></div>
+      <a href="login.html" class="btn-primary" style="text-decoration:none; display:flex; margin-bottom:12px;">
+        Back to Sign In
+      </a>
+      <div class="resend-wrap">
+        Didn't receive it?
+        <button id="resendBtn" type="button">Resend email</button>
+        <span id="resendTimer"></span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="js/auth-shared.js"></script>
+<script>
+  redirectIfLoggedIn();
+
+  setupPasswordToggle("regPassword", "regPwToggle");
+  setupPasswordToggle("regConfirm", "regConfirmToggle");
+  setupStrengthMeter("regPassword", "strengthFill", "strengthLabel");
+
+  document.getElementById("googleBtn").addEventListener("click", () => {
+    showAlert("alertBox", "Google login is not configured. Please use email and password.", "info");
+  });
+
+  let registeredEmail = "";
+
+  document.getElementById("registerForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    clearAlert("alertBox");
+
+    const nameEl    = document.getElementById("regName");
+    const emailEl   = document.getElementById("regEmail");
+    const pwEl      = document.getElementById("regPassword");
+    const confirmEl = document.getElementById("regConfirm");
+
+    // Clear field errors
+    [[nameEl, "regNameErr"], [emailEl, "regEmailErr"], [pwEl, "regPwErr"], [confirmEl, "regConfirmErr"]]
+      .forEach(([el, errId]) => clearFieldError(el, document.getElementById(errId)));
+
+    const name     = nameEl.value.trim();
+    const email    = emailEl.value.trim();
+    const password = pwEl.value;
+    const confirm  = confirmEl.value;
+
+    // Validate
+    let valid = true;
+    if (!name) {
+      showFieldError(nameEl, document.getElementById("regNameErr"), "Full name is required.");
+      valid = false;
+    }
+    if (!email || !isValidEmail(email)) {
+      showFieldError(emailEl, document.getElementById("regEmailErr"), "Please enter a valid email address.");
+      valid = false;
+    }
+    if (password.length < 8) {
+      showFieldError(pwEl, document.getElementById("regPwErr"), "Password must be at least 8 characters.");
+      valid = false;
+    }
+    if (password !== confirm) {
+      showFieldError(confirmEl, document.getElementById("regConfirmErr"), "Passwords do not match.");
+      valid = false;
+    }
+    if (!document.getElementById("termsCheck").checked) {
+      showAlert("alertBox", "Please accept the Terms of Service to continue.", "warning");
+      valid = false;
+    }
+    if (!valid) return;
+
+    const btn = document.getElementById("registerBtn");
+    const origText = btn.textContent;
+    setButtonLoading(btn, true, origText);
+
+    try {
+      const result = await apiPost("/auth/register", { name, email, password });
+
+      // If mail not configured, backend auto-logs user in — go straight to dashboard
+      if (!result.needs_verification) {
+        location.replace("dashboard.html");
+        return;
+      }
+
+      // Email verification required
+      registeredEmail = email;
+      document.getElementById("sentToEmail").textContent = email;
+
+      document.getElementById("registerState").style.display = "none";
+      document.getElementById("checkEmailState").style.display = "block";
+      startResendTimer();
+    } catch (err) {
+      setButtonLoading(btn, false, origText);
+      const msg = err.message || "Registration failed.";
+      if (msg.toLowerCase().includes("already registered") || msg.toLowerCase().includes("already exists")) {
+        showAlert("alertBox",
+          `${msg} <a href="login.html" style="font-weight:700;color:inherit;">Sign in instead →</a>`,
+          "info");
+      } else {
+        showAlert("alertBox", msg, "error");
+      }
+    }
+  });
+
+  // Resend timer
+  let resendCooldown = 0;
+  let resendInterval = null;
+
+  function startResendTimer() {
+    resendCooldown = 60;
+    const btn   = document.getElementById("resendBtn");
+    const timer = document.getElementById("resendTimer");
+    btn.disabled = true;
+    timer.textContent = ` (${resendCooldown}s)`;
+    resendInterval = setInterval(() => {
+      resendCooldown--;
+      timer.textContent = resendCooldown > 0 ? ` (${resendCooldown}s)` : "";
+      if (resendCooldown <= 0) {
+        clearInterval(resendInterval);
+        btn.disabled = false;
+      }
+    }, 1000);
+  }
+
+  document.getElementById("resendBtn").addEventListener("click", async () => {
+    if (!registeredEmail) return;
+    const btn = document.getElementById("resendBtn");
+    btn.disabled = true;
+    btn.textContent = "Sending…";
+    try {
+      await apiPost("/auth/resend-verification", { email: registeredEmail });
+      showAlert("alertBox", "Verification email resent! Check your inbox.", "success");
+    } catch (err) {
+      showAlert("alertBox", err.message, "error");
+    } finally {
+      btn.textContent = "Resend email";
+      startResendTimer();
+    }
+  });
+</script>
+</body>
+</html>

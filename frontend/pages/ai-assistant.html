@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Financial Assistant — Finlumiq</title>
+  <meta name="description" content="Ask Finlumiq AI about your spending, budget, college fees, savings and scholarships.">
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    .ai-page-intro { max-width: 780px; }
+    .ai-privacy { display:flex; gap:12px; align-items:flex-start; padding:14px 16px; border:1px solid var(--border); border-radius:var(--radius-lg); background:var(--surface-2); color:var(--text-2); font-size:.86rem; margin-bottom:20px; }
+    .ai-privacy strong { color:var(--text); }
+    .ai-workspace { display:grid; grid-template-columns:280px minmax(0,1fr); gap:18px; align-items:stretch; }
+    .ai-history-card { min-height:620px; display:flex; flex-direction:column; }
+    .ai-history-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
+    .ai-conversation-list { display:grid; gap:7px; overflow:auto; max-height:520px; }
+    .ai-conversation { width:100%; display:flex; align-items:center; gap:8px; text-align:left; border:1px solid transparent; background:transparent; color:var(--text); border-radius:var(--radius); padding:10px; cursor:pointer; font:inherit; }
+    .ai-conversation:hover { background:var(--surface-2); }
+    .ai-conversation.active { background:var(--primary-soft); border-color:var(--border); color:var(--primary); }
+    .ai-conversation-title { min-width:0; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.84rem; }
+    .ai-delete-chat { border:0; background:transparent; color:var(--muted); cursor:pointer; padding:4px 6px; border-radius:7px; }
+    .ai-delete-chat:hover { color:var(--danger); background:var(--surface); }
+    .ai-chat-card { min-height:620px; display:flex; flex-direction:column; padding:0; overflow:hidden; }
+    .ai-chat-top { display:flex; align-items:center; justify-content:space-between; gap:12px; border-bottom:1px solid var(--border); padding:17px 20px; }
+    .ai-chat-brand { display:flex; align-items:center; gap:11px; }
+    .ai-avatar { width:42px; height:42px; display:grid; place-items:center; border-radius:14px; color:white; background:var(--grad-primary); font-size:1.3rem; }
+    .ai-chat-scroll { flex:1; min-height:350px; max-height:540px; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:15px; }
+    .ai-message { display:flex; gap:10px; align-items:flex-start; max-width:92%; }
+    .ai-message.user { align-self:flex-end; flex-direction:row-reverse; }
+    .ai-message-avatar { flex:0 0 30px; width:30px; height:30px; display:grid; place-items:center; border-radius:10px; background:var(--surface-2); font-size:.9rem; }
+    .ai-message.user .ai-message-avatar { background:var(--primary-soft); }
+    .ai-bubble { border:1px solid var(--border); border-radius:4px 14px 14px 14px; padding:12px 14px; background:var(--surface-2); color:var(--text); font-size:.9rem; line-height:1.65; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .ai-message.user .ai-bubble { background:var(--primary-soft); border-color:transparent; border-radius:14px 4px 14px 14px; }
+    .ai-welcome { margin:auto; max-width:560px; text-align:center; padding:20px 8px; }
+    .ai-welcome-icon { width:68px; height:68px; display:grid; place-items:center; margin:0 auto 14px; border-radius:22px; background:var(--primary-soft); font-size:2rem; }
+    .ai-prompt-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; margin-top:20px; }
+    .ai-prompt { border:1px solid var(--border); border-radius:var(--radius); padding:11px 12px; background:var(--surface); color:var(--text); cursor:pointer; text-align:left; font:inherit; font-size:.82rem; transition:all var(--transition); }
+    .ai-prompt:hover { border-color:var(--primary); background:var(--primary-soft); }
+    .ai-composer { border-top:1px solid var(--border); padding:15px 18px 17px; background:var(--surface); }
+    .ai-composer-row { display:flex; align-items:flex-end; gap:10px; }
+    .ai-composer textarea { resize:vertical; min-height:54px; max-height:150px; flex:1; }
+    .ai-composer-hint { color:var(--muted); font-size:.74rem; margin-top:7px; }
+    .ai-loading-dots { color:var(--muted); font-size:.84rem; }
+    .ai-empty-history { padding:18px 10px; color:var(--muted); font-size:.84rem; text-align:center; }
+    .ai-snapshot-note { color:var(--muted); font-size:.78rem; margin-top:8px; }
+    @media(max-width:900px) { .ai-workspace { grid-template-columns:1fr; } .ai-history-card { min-height:unset; } .ai-conversation-list { max-height:180px; } .ai-chat-card { min-height:600px; } }
+    @media(max-width:560px) { .ai-prompt-grid { grid-template-columns:1fr; } .ai-chat-scroll { padding:14px; } .ai-message { max-width:100%; } .ai-chat-top { padding:14px; } .ai-composer { padding:12px; } }
+  </style>
+</head>
+<body>
+<div id="appNav"></div>
+<header class="topbar">
+  <a class="topbar-brand" href="dashboard.html"><div class="topbar-logo">🎓</div><span class="topbar-title">Finlumiq</span></a>
+  <div class="topbar-right">
+    <span class="topbar-page-title">AI Financial Assistant</span>
+    <button class="theme-toggle-btn" aria-label="Toggle theme">🌙</button>
+    <button id="navOpenBtn" class="nav-open-btn" aria-label="Open menu">☰</button>
+  </div>
+</header>
+
+<main class="page-wrap">
+  <div class="page-header">
+    <div class="page-header-left ai-page-intro">
+      <h1>🤖 AI Financial Assistant</h1>
+      <p>Understand your spending, plan your student budget and stay on top of college finances.</p>
+    </div>
+    <button class="btn btn-secondary" id="refreshInsightsBtn">↻ Refresh overview</button>
+  </div>
+
+  <div class="ai-privacy">
+    <span aria-hidden="true">🔒</span>
+    <div><strong>Your data stays account-scoped.</strong> When you send a message, Finlumiq sends a limited summary of your financial records and your question to Google Gemini to generate a personalized response. Your login credentials and email address are not included. The assistant is read-only and cannot change your records.</div>
+  </div>
+
+  <div class="stat-cards" id="aiStats">
+    <div class="stat-card"><div class="stat-label">This Month's Spending</div><div class="stat-icon">💸</div><div class="stat-value" id="aiMonthSpend">—</div><div class="stat-sub" id="aiMonthLabel">Loading overview…</div></div>
+    <div class="stat-card success"><div class="stat-label">Monthly Income</div><div class="stat-icon">📈</div><div class="stat-value" id="aiMonthIncome">—</div><div class="stat-sub">Recorded income this month</div></div>
+    <div class="stat-card warning"><div class="stat-label">Budget Used</div><div class="stat-icon">🎯</div><div class="stat-value" id="aiBudgetUsed">—</div><div class="stat-sub" id="aiBudgetLabel">Monthly budget</div></div>
+    <div class="stat-card info"><div class="stat-label">Pending College Fees</div><div class="stat-icon">🏫</div><div class="stat-value" id="aiPendingFees">—</div><div class="stat-sub" id="aiGoalsLabel">Savings goals loading…</div></div>
+  </div>
+  <p class="ai-snapshot-note" id="aiSnapshotStatus" aria-live="polite"></p>
+
+  <div class="ai-workspace mt-16">
+    <aside class="card ai-history-card">
+      <div class="ai-history-head">
+        <div class="section-title" style="margin:0;">💬 Your conversations</div>
+        <button class="btn btn-sm btn-primary" id="newChatBtn">+ New</button>
+      </div>
+      <div class="ai-conversation-list" id="conversationList"><div class="loading-state"><div class="spinner"></div><span>Loading…</span></div></div>
+    </aside>
+
+    <section class="card ai-chat-card" aria-label="Chat with Finlumiq AI">
+      <div class="ai-chat-top">
+        <div class="ai-chat-brand">
+          <div class="ai-avatar">✦</div>
+          <div><div style="font-weight:750;">Finlumiq AI</div><div class="text-muted" style="font-size:.78rem;">Powered by Gemini</div></div>
+        </div>
+        <span class="badge badge-success">Financial insights</span>
+      </div>
+
+      <div class="ai-chat-scroll" id="chatMessages" aria-live="polite">
+        <div class="ai-welcome" id="welcomePanel">
+          <div class="ai-welcome-icon">🤖</div>
+          <h2 style="margin:0 0 8px;">How can I help with your finances?</h2>
+          <p class="text-muted" style="font-size:.9rem;">Ask about your real recorded expenses, budget, college fees, savings goals or scholarships.</p>
+          <div class="ai-prompt-grid">
+            <button class="ai-prompt" data-prompt="Analyse my spending this month. Which categories are taking the most money?">📊 Analyse my spending</button>
+            <button class="ai-prompt" data-prompt="Review my monthly budget and suggest a realistic way to manage the remaining amount.">🎯 Help me plan my budget</button>
+            <button class="ai-prompt" data-prompt="Summarise my pending college fees and help me prioritise upcoming payments.">🏫 Review my college fees</button>
+            <button class="ai-prompt" data-prompt="Review my savings goals and scholarships. Suggest practical next steps.">🌱 Savings and scholarships</button>
+          </div>
+        </div>
+      </div>
+
+      <form class="ai-composer" id="chatForm">
+        <div class="ai-composer-row">
+          <textarea id="chatInput" class="form-control" rows="2" maxlength="3000" placeholder="Ask Finlumiq AI about your money…" aria-label="Your message" required></textarea>
+          <button type="submit" class="btn btn-primary" id="sendBtn">Send ↗</button>
+        </div>
+        <div class="ai-composer-hint">Enter to send · Shift + Enter for a new line · Up to 3,000 characters</div>
+        <div id="chatError" class="auth-message error mt-8" hidden></div>
+      </form>
+    </section>
+  </div>
+</main>
+
+<script src="js/common.js"></script>
+<script src="js/nav.js"></script>
+<script>
+initTheme();
+let currentConversationId = null;
+let isSending = false;
+
+function formatINR(value) {
+  return '₹' + Number(value || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+}
+function setChatError(message) {
+  const box = document.getElementById('chatError');
+  box.textContent = message || '';
+  box.hidden = !message;
+}
+function scrollChatToBottom() {
+  const panel = document.getElementById('chatMessages');
+  panel.scrollTop = panel.scrollHeight;
+}
+function showWelcome() {
+  const panel = document.getElementById('chatMessages');
+  panel.innerHTML = '';
+  const welcome = document.createElement('div');
+  welcome.className = 'ai-welcome';
+  welcome.id = 'welcomePanel';
+  welcome.innerHTML = `
+    <div class="ai-welcome-icon">🤖</div>
+    <h2 style="margin:0 0 8px;">How can I help with your finances?</h2>
+    <p class="text-muted" style="font-size:.9rem;">Ask about your real recorded expenses, budget, college fees, savings goals or scholarships.</p>
+    <div class="ai-prompt-grid">
+      <button class="ai-prompt" data-prompt="Analyse my spending this month. Which categories are taking the most money?">📊 Analyse my spending</button>
+      <button class="ai-prompt" data-prompt="Review my monthly budget and suggest a realistic way to manage the remaining amount.">🎯 Help me plan my budget</button>
+      <button class="ai-prompt" data-prompt="Summarise my pending college fees and help me prioritise upcoming payments.">🏫 Review my college fees</button>
+      <button class="ai-prompt" data-prompt="Review my savings goals and scholarships. Suggest practical next steps.">🌱 Savings and scholarships</button>
+    </div>`;
+  panel.appendChild(welcome);
+}
+function addMessage(role, text) {
+  const panel = document.getElementById('chatMessages');
+  const welcome = document.getElementById('welcomePanel');
+  if (welcome) welcome.remove();
+  const item = document.createElement('div');
+  item.className = 'ai-message ' + (role === 'user' ? 'user' : 'assistant');
+  const avatar = document.createElement('div');
+  avatar.className = 'ai-message-avatar';
+  avatar.textContent = role === 'user' ? '👤' : '✦';
+  const bubble = document.createElement('div');
+  bubble.className = 'ai-bubble';
+  // Use textContent so model output is never interpreted as executable HTML.
+  bubble.textContent = text;
+  item.append(avatar, bubble);
+  panel.appendChild(item);
+  scrollChatToBottom();
+  return item;
+}
+async function loadInsights() {
+  const status = document.getElementById('aiSnapshotStatus');
+  status.textContent = 'Refreshing your private financial overview…';
+  try {
+    const data = await API_CLIENT.get('/ai/insights');
+    document.getElementById('aiMonthSpend').textContent = formatINR(data.monthly_expenses);
+    document.getElementById('aiMonthIncome').textContent = formatINR(data.monthly_income);
+    document.getElementById('aiMonthLabel').textContent = data.current_month || 'This month';
+    document.getElementById('aiBudgetUsed').textContent = data.budget_used_percent === null ? 'Not set' : data.budget_used_percent + '%';
+    document.getElementById('aiBudgetLabel').textContent = data.monthly_budget > 0 ? 'of ' + formatINR(data.monthly_budget) : 'Set a budget to track usage';
+    document.getElementById('aiPendingFees').textContent = formatINR(data.pending_fees);
+    document.getElementById('aiGoalsLabel').textContent = data.active_goals + ' active savings goal(s) · ' + formatINR(data.saved_total) + ' saved';
+    status.textContent = data.data_sections_unavailable && data.data_sections_unavailable.length
+      ? 'Some sections could not be loaded: ' + data.data_sections_unavailable.join(', ') + '. Ask about the available sections or check your database migrations.'
+      : 'Overview updated for ' + data.as_of_date + '.';
+  } catch (error) {
+    status.textContent = 'Could not load the financial overview: ' + error.message;
+  }
+}
+async function loadConversations() {
+  const list = document.getElementById('conversationList');
+  try {
+    const conversations = await API_CLIENT.get('/ai/conversations');
+    list.innerHTML = '';
+    if (!conversations.length) {
+      const empty = document.createElement('div');
+      empty.className = 'ai-empty-history';
+      empty.textContent = 'Your saved conversations will appear here.';
+      list.appendChild(empty);
+      return;
+    }
+    conversations.forEach(conversation => {
+      const row = document.createElement('div');
+      row.style.display = 'flex';
+      row.style.alignItems = 'center';
+      row.style.gap = '4px';
+      const open = document.createElement('button');
+      open.type = 'button';
+      open.className = 'ai-conversation' + (Number(conversation.id) === Number(currentConversationId) ? ' active' : '');
+      const title = document.createElement('span');
+      title.className = 'ai-conversation-title';
+      title.textContent = conversation.title || 'New conversation';
+      open.append('💬 ', title);
+      open.addEventListener('click', () => loadConversation(conversation.id));
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'ai-delete-chat';
+      remove.textContent = '×';
+      remove.title = 'Delete conversation';
+      remove.setAttribute('aria-label', 'Delete conversation');
+      remove.addEventListener('click', () => deleteConversation(conversation.id));
+      row.append(open, remove);
+      list.appendChild(row);
+    });
+  } catch (error) {
+    list.textContent = 'Could not load conversations: ' + error.message;
+  }
+}
+async function loadConversation(id) {
+  try {
+    const data = await API_CLIENT.get('/ai/conversations/' + encodeURIComponent(id));
+    currentConversationId = data.conversation.id;
+    document.getElementById('chatMessages').innerHTML = '';
+    data.messages.forEach(message => addMessage(message.role, message.content));
+    if (!data.messages.length) showWelcome();
+    await loadConversations();
+    setChatError('');
+  } catch (error) {
+    showToast(error.message, 'error');
+  }
+}
+async function deleteConversation(id) {
+  if (!confirm('Delete this conversation and its saved messages?')) return;
+  try {
+    await API_CLIENT.del('/ai/conversations/' + encodeURIComponent(id));
+    if (Number(currentConversationId) === Number(id)) {
+      currentConversationId = null;
+      showWelcome();
+    }
+    await loadConversations();
+    showToast('Conversation deleted.');
+  } catch (error) {
+    showToast(error.message, 'error');
+  }
+}
+function startNewChat() {
+  currentConversationId = null;
+  setChatError('');
+  showWelcome();
+  document.getElementById('chatInput').focus();
+  loadConversations();
+}
+async function sendMessage(message) {
+  if (isSending || !message.trim()) return;
+  isSending = true;
+  setChatError('');
+  document.getElementById('sendBtn').disabled = true;
+  document.getElementById('sendBtn').textContent = 'Thinking…';
+  const pending = addMessage('assistant', 'Finlumiq AI is reviewing your financial summary…');
+  try {
+    const payload = { message: message.trim() };
+    if (currentConversationId) payload.conversation_id = currentConversationId;
+    const result = await API_CLIENT.post('/ai/chat', payload);
+    pending.remove();
+    addMessage('user', message.trim());
+    addMessage('assistant', result.reply);
+    currentConversationId = result.conversation_id;
+    document.getElementById('chatInput').value = '';
+    await loadConversations();
+  } catch (error) {
+    pending.remove();
+    setChatError(error.message);
+  } finally {
+    isSending = false;
+    document.getElementById('sendBtn').disabled = false;
+    document.getElementById('sendBtn').textContent = 'Send ↗';
+    document.getElementById('chatInput').focus();
+  }
+}
+
+document.getElementById('chatForm').addEventListener('submit', event => {
+  event.preventDefault();
+  sendMessage(document.getElementById('chatInput').value);
+});
+document.getElementById('chatInput').addEventListener('keydown', event => {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    document.getElementById('chatForm').requestSubmit();
+  }
+});
+document.getElementById('newChatBtn').addEventListener('click', startNewChat);
+document.getElementById('refreshInsightsBtn').addEventListener('click', loadInsights);
+document.addEventListener('click', event => {
+  const promptButton = event.target.closest('[data-prompt]');
+  if (!promptButton) return;
+  sendMessage(promptButton.getAttribute('data-prompt') || '');
+});
+
+async function initAIPage() {
+  const user = await requireAuth();
+  buildNav('ai-assistant', user);
+  await Promise.all([loadInsights(), loadConversations()]);
+}
+initAIPage().catch(error => {
+  document.getElementById('aiSnapshotStatus').textContent = error.message || 'Unable to initialise the AI assistant.';
+});
+</script>
+</body>
+</html>

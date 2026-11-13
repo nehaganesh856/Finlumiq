@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verify Email — Finlumiq</title>
+<link rel="stylesheet" href="css/auth.css">
+</head>
+<body>
+<div class="auth-bg"><div class="blob-accent"></div></div>
+<button class="theme-btn" id="themeBtn">🌙 Dark</button>
+
+<div class="auth-page">
+  <div class="auth-card-centered">
+    <a href="login.html" class="auth-logo">
+      <div class="auth-logo-icon">🎓</div>
+      <span class="auth-logo-text">Finlumiq</span>
+    </a>
+
+    <!-- Loading state -->
+    <div id="loadingState" style="text-align:center;padding:20px 0;">
+      <div style="font-size:3rem;margin-bottom:16px;animation:spin 1s linear infinite;display:inline-block;">⏳</div>
+      <div class="status-title">Verifying your email…</div>
+      <p class="status-sub">Please wait a moment.</p>
+    </div>
+
+    <!-- Success state -->
+    <div id="successState" style="display:none;text-align:center;">
+      <div class="status-icon">🎉</div>
+      <div class="status-title">Email Verified!</div>
+      <p class="status-sub">
+        Your email address has been successfully verified.<br>
+        You can now sign in to your Finlumiq account.
+      </p>
+      <a href="login.html?reason=verified" class="btn-primary" style="text-decoration:none;display:flex;margin-bottom:0;">
+        Sign In Now
+      </a>
+    </div>
+
+    <!-- Error state -->
+    <div id="errorState" style="display:none;text-align:center;">
+      <div class="status-icon">❌</div>
+      <div class="status-title" id="errorTitle">Link Expired</div>
+      <p class="status-sub" id="errorMsg">
+        This verification link is invalid or has expired.<br>
+        Verification links are valid for 30 minutes.
+      </p>
+      <div id="resendSection">
+        <div id="resendAlertBox" style="margin-bottom:16px;"></div>
+        <div class="form-group">
+          <label class="form-label" for="resendEmail">Your email address</label>
+          <div class="input-wrap">
+            <span class="input-icon">✉️</span>
+            <input id="resendEmail" type="email" class="form-input has-icon" placeholder="you@gmail.com">
+          </div>
+        </div>
+        <button class="btn-primary" id="resendBtn" type="button">Resend Verification Email</button>
+      </div>
+      <div class="auth-footer-link" style="margin-top:12px;">
+        <a href="login.html">Back to Sign In</a>
+      </div>
+    </div>
+
+    <!-- Already-verified state -->
+    <div id="alreadyState" style="display:none;text-align:center;">
+      <div class="status-icon">✅</div>
+      <div class="status-title">Already Verified</div>
+      <p class="status-sub">Your email is already verified. Sign in to continue.</p>
+      <a href="login.html" class="btn-primary" style="text-decoration:none;display:flex;">Sign In</a>
+    </div>
+  </div>
+</div>
+
+<script src="js/auth-shared.js"></script>
+<script>
+  const params = new URLSearchParams(location.search);
+  const status = params.get("status");   // "success" | "invalid" | "already"
+  const token  = params.get("token");    // raw token if page loaded directly with token
+
+  function show(stateId) {
+    ["loadingState","successState","errorState","alreadyState"].forEach(id => {
+      document.getElementById(id).style.display = id === stateId ? "block" : "none";
+    });
+  }
+
+  async function init() {
+    // Case 1: Redirected from backend with ?status=
+    if (status === "success") { show("successState"); return; }
+    if (status === "invalid")  { show("errorState");  return; }
+    if (status === "already")  { show("alreadyState"); return; }
+
+    // Case 2: Page loaded directly with ?token= (email link goes to frontend)
+    if (token) {
+      show("loadingState");
+      try {
+        // Redirect to backend which will redirect back here with ?status=
+        location.href = `http://127.0.0.1:5000/api/auth/verify-email?token=${encodeURIComponent(token)}`;
+      } catch {
+        show("errorState");
+      }
+      return;
+    }
+
+    // Case 3: No token, no status — link was broken
+    show("errorState");
+    document.getElementById("errorTitle").textContent = "Invalid Link";
+    document.getElementById("errorMsg").textContent =
+      "This verification link is missing or malformed. Please request a new one.";
+  }
+
+  init();
+
+  // Resend button
+  document.getElementById("resendBtn")?.addEventListener("click", async () => {
+    const email = document.getElementById("resendEmail").value.trim();
+    if (!email || !isValidEmail(email)) {
+      showAlert("resendAlertBox", "Please enter a valid email address.", "error");
+      return;
+    }
+    const btn = document.getElementById("resendBtn");
+    const orig = btn.textContent;
+    setButtonLoading(btn, true, orig);
+    try {
+      await apiPost("/auth/resend-verification", { email });
+      showAlert("resendAlertBox", "Verification email sent! Check your inbox.", "success");
+      document.getElementById("resendSection").style.display = "none";
+    } catch (err) {
+      showAlert("resendAlertBox", err.message, "error");
+    } finally {
+      setButtonLoading(btn, false, orig);
+    }
+  });
+</script>
+</body>
+</html>

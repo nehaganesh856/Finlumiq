@@ -1,0 +1,334 @@
+/* ---------- Theme colors ---------- */
+:root {
+  color-scheme: light;
+  --bg: #f4f6fb;
+  --surface: #ffffff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --primary: #4f46e5;
+  --danger: #dc2626;
+  --border: #e5e7eb;
+  --input-bg: #ffffff;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --error-bg: #fee2e2;
+  --error-text: #991b1b;
+  --error-border: #fecaca;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --text: #e5e7eb;
+  --muted: #94a3b8;
+  --primary: #6366f1;
+  --danger: #f87171;
+  --border: #334155;
+  --input-bg: #0f172a;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --error-bg: #450a0a;
+  --error-text: #fecaca;
+  --error-border: #7f1d1d;
+}
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+[hidden] { display: none !important; }
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  transition: background 0.2s, color 0.2s;
+}
+
+/* ---------- Top bar ---------- */
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 24px;
+  background: var(--primary);
+  color: #fff;
+}
+
+.topbar-actions { display: flex; align-items: center; gap: 10px; }
+
+.session-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.topbar input {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: none;
+  background: #fff;
+  color: #1f2937;
+  color-scheme: light;
+}
+
+.user-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.icon-btn {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  font-size: 1.1rem;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+}
+
+#logoutBtn {
+  background: rgba(255, 255, 255, 0.2);
+  white-space: nowrap;
+}
+
+/* ---------- Layout ---------- */
+.container {
+  max-width: 900px;
+  margin: 24px auto;
+  padding: 0 16px;
+  display: grid;
+  gap: 20px;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  background: var(--surface);
+  padding: 18px;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 6px;
+}
+.card span { color: var(--muted); font-size: 0.85rem; }
+.card strong { font-size: 1.5rem; word-break: break-word; }
+.card .bar-track { margin: 4px 0; }
+.card input { width: 100%; min-width: 0; } /* keeps the budget box inside its card */
+
+.panel {
+  background: var(--surface);
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+.panel h2 { margin-bottom: 14px; font-size: 1.1rem; }
+
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.panel-head h2 { margin: 0; }
+
+/* ---------- Forms ---------- */
+form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+input, select {
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: var(--input-bg);
+  color: var(--text);
+}
+input::placeholder { color: var(--muted); }
+
+input:focus-visible, select:focus-visible, button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+button {
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:hover { opacity: 0.9; }
+button.small { padding: 8px 14px; font-size: 0.85rem; }
+#cancelBtn { background: var(--muted); }
+
+/* ---------- Login / Register ---------- */
+.auth-wrap {
+  max-width: 420px;
+  margin: 40px auto;
+  padding: 0 16px;
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.auth-tabs button { background: var(--border); color: var(--text); }
+.auth-tabs button.active { background: var(--primary); color: #fff; }
+
+.auth-form { display: grid; grid-template-columns: 1fr; gap: 12px; }
+
+/* ---------- Bars ---------- */
+.bar-row { margin-bottom: 10px; }
+.bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+}
+.bar-track {
+  background: var(--border);
+  border-radius: 6px;
+  height: 10px;
+  overflow: hidden;
+}
+.bar-fill {
+  background: var(--primary);
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.3s;
+}
+.bar-fill.over { background: var(--danger); }
+.warn { color: var(--danger); }
+
+/* ---------- Expense list ---------- */
+.list { list-style: none; display: grid; gap: 8px; }
+
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.item .meta { min-width: 0; word-break: break-word; }
+.item .meta small { color: var(--muted); display: block; margin-top: 2px; }
+.item .right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.item .amt { font-weight: 700; }
+.item button { padding: 6px 10px; font-size: 0.8rem; }
+.item .edit { background: #0ea5e9; }
+.item .del { background: var(--danger); }
+
+.empty { color: var(--muted); text-align: center; padding: 16px; }
+
+/* ---------- Charts ---------- */
+.charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+.chart-box { position: relative; height: 280px; }
+
+/* ---------- Error box ---------- */
+.error-box {
+  max-width: 900px;
+  margin: 16px auto 0;
+  padding: 12px 16px;
+  background: var(--error-bg);
+  color: var(--error-text);
+  border: 1px solid var(--error-border);
+  border-radius: 8px;
+}
+.error-box.inline { margin: 0 0 12px; max-width: none; }
+
+/* ---------- Tablets and phones ---------- */
+@media (max-width: 600px) {
+  .topbar { padding: 12px 16px; }
+  .topbar h1 { font-size: 1.2rem; }
+
+  /* greeting on its own line, controls underneath */
+  .topbar-actions { width: 100%; flex-wrap: wrap; }
+  .session-controls { flex: 1 1 100%; }
+  .user-name { flex: 1 1 100%; max-width: none; }
+  .topbar-actions input { flex: 1 1 auto; min-width: 0; }
+
+  .container { margin: 16px auto; padding: 0 12px; gap: 14px; }
+  .panel { padding: 16px; }
+  .auth-wrap { margin: 24px auto; }
+
+  /* 2 small cards per row, budget card full width */
+  .cards { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .cards .card:last-child { grid-column: 1 / -1; }
+  .card { padding: 14px; }
+  .card strong { font-size: 1.25rem; }
+
+  /* one field per row, 16px text stops phone browsers zooming in */
+  form { grid-template-columns: 1fr; }
+  input, select { font-size: 16px; padding: 12px; }
+  button { min-height: 44px; }
+
+  /* charts stack, list items wrap */
+  .charts { grid-template-columns: 1fr; }
+  .chart-box { height: 240px; }
+
+  .item { flex-wrap: wrap; }
+  .item .right { width: 100%; justify-content: space-between; }
+  .item button { padding: 10px 14px; min-height: 40px; }
+}
+/* ---------- Phase 1: income, categories ---------- */
+.hint { color: var(--muted); font-size: 0.85rem; margin: -6px 0 12px; }
+
+.item .amt.plus { color: #16a34a; }
+.income-list { margin-top: 14px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+.chip small { color: var(--muted); }
+.chip button {
+  min-height: 0;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  background: var(--danger);
+}
+/* ---------- Phase 2: group budgets and daily allowance ---------- */
+.note { color: var(--muted); font-size: 0.8rem; line-height: 1.3; }
+
+.gb-form { grid-template-columns: 1fr; }
+.gb-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+.gb-row { display: grid; gap: 6px; }
+.gb-top { display: flex; justify-content: space-between; gap: 8px; font-size: 0.85rem; }
+.gb-input { width: 100%; }
+
+@media (max-width: 600px) {
+  .cards .card.wide { grid-column: 1 / -1; }
+}

@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Budgets — Finlumiq</title>
+<link rel="stylesheet" href="css/app.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+.budget-groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;}
+.budget-group-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;}
+.grp-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.grp-icon{font-size:1.4rem;}
+.grp-name{font-weight:700;font-size:0.95rem;}
+.grp-spent{font-size:0.8rem;color:var(--muted);}
+.grp-input-row{display:flex;align-items:center;gap:8px;margin-top:10px;}
+.rupee-prefix{font-weight:700;color:var(--muted);}
+.budget-notice{display:none;margin:12px 0;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:.85rem;line-height:1.45;color:var(--muted);}
+.budget-notice.show{display:block;}
+@media(max-width:600px){.monthly-budget-layout{grid-template-columns:1fr!important;}.page-header{flex-wrap:wrap;gap:12px;}}
+</style>
+</head>
+<body>
+<div id="appNav"></div>
+<header class="topbar">
+  <a class="topbar-brand" href="dashboard.html"><div class="topbar-logo">🎓</div><span class="topbar-title">Finlumiq</span></a>
+  <div class="topbar-right">
+    <span class="topbar-page-title">Budgets</span>
+    <button class="theme-toggle-btn">🌙</button>
+    <button id="navOpenBtn" class="nav-open-btn">☰</button>
+  </div>
+</header>
+
+<main class="page-wrap">
+  <div class="page-header">
+    <div class="page-header-left"><h1>🎯 Budgets</h1><p>Set and track your monthly spending limits.</p></div>
+    <button class="btn btn-primary" id="saveBudgetsBtn">💾 Save All Budgets</button>
+  </div>
+
+  <div class="card mb-24">
+    <div class="section-title">📅 Monthly Budget</div>
+    <div class="monthly-budget-layout" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+      <div>
+        <div class="form-group mb-16">
+          <label class="form-label" for="monthlyBudgetInput">Total Monthly Budget (₹)</label>
+          <input id="monthlyBudgetInput" type="number" class="form-control" placeholder="e.g. 10000" min="0" step="100">
+        </div>
+        <div class="d-flex gap-8"><span class="text-muted" style="font-size:0.88rem;">Spent this month: <strong id="monthlySpent">₹0</strong></span></div>
+        <div class="progress-track" style="margin:10px 0;"><div class="progress-fill" id="monthlyProgressBar" style="width:0%;"></div></div>
+        <div id="monthlyStatus" class="text-muted" style="font-size:0.82rem;"></div>
+      </div>
+      <div class="chart-wrap" style="height:160px;"><canvas id="monthlyChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section-title mb-16">📊 Category Group Budgets</div>
+  <div id="budgetLoadNotice" class="budget-notice" role="status" aria-live="polite"></div>
+  <div class="budget-groups" id="budgetGroups">
+    <div class="loading-state"><div class="spinner"></div><span>Loading…</span></div>
+  </div>
+
+  <div class="card mt-24">
+    <div class="section-title">📈 Budget vs Spending (This Month)</div>
+    <div class="chart-wrap" style="height:300px;"><canvas id="budgetChart"></canvas></div>
+  </div>
+
+  <div class="section-title mt-24 mb-16">💡 Budgeting Tips for Students</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+    <div class="card card-sm"><div style="font-size:1.5rem;margin-bottom:8px;">🍽</div><div class="fw-semi mb-8">50-30-20 Rule</div><div class="text-muted" style="font-size:0.85rem;">50% needs, 30% wants, 20% savings. Adapt it to your student life.</div></div>
+    <div class="card card-sm"><div style="font-size:1.5rem;margin-bottom:8px;">📱</div><div class="fw-semi mb-8">Track Daily</div><div class="text-muted" style="font-size:0.85rem;">Log expenses as soon as you spend to avoid forgetting small purchases.</div></div>
+    <div class="card card-sm"><div style="font-size:1.5rem;margin-bottom:8px;">🛒</div><div class="fw-semi mb-8">Plan Groceries</div><div class="text-muted" style="font-size:0.85rem;">Buy in bulk and cook meals — you can save 40-60% over eating out daily.</div></div>
+    <div class="card card-sm"><div style="font-size:1.5rem;margin-bottom:8px;">🎯</div><div class="fw-semi mb-8">Emergency Fund</div><div class="text-muted" style="font-size:0.85rem;">Keep at least ₹2,000-₹5,000 set aside for unexpected expenses.</div></div>
+  </div>
+</main>
+
+<div id="confirmModal" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-body" style="text-align:center;padding:32px 24px;">
+      <div id="confirmTitle" style="font-weight:700;margin-bottom:8px;font-size:1.1rem;"></div>
+      <div id="confirmBody" style="color:var(--muted);"></div>
+    </div>
+    <div class="modal-footer"><button id="confirmNo" class="btn btn-secondary">Cancel</button><button id="confirmYes" class="btn btn-danger">Confirm</button></div>
+  </div>
+</div>
+
+<script src="js/common.js"></script>
+<script src="js/nav.js"></script>
+<script>
+'use strict';
+
+initTheme();
+
+const GROUPS = [
+  {name:'Food',icon:'🍽'},
+  {name:'Shopping',icon:'🛍'},
+  {name:'College',icon:'🎓'},
+  {name:'Transport',icon:'🚌'},
+  {name:'Living',icon:'🏠'},
+  {name:'Bills',icon:'📱'},
+  {name:'Fun',icon:'🎬'},
+  {name:'Health',icon:'💊'},
+  {name:'Other',icon:'📦'}
+];
+
+let monthlyBudget = 0;
+let groupBudgets = {};
+let monthExpenses = [];
+let budgetChartI = null;
+let monthlyChartI = null;
+
+/* Use the browser's local calendar date, not UTC, to select the current month. */
+function getCurrentMonth() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function toAmount(value) {
+  if (typeof value === 'string') value = value.replace(/[₹,\s]/g, '');
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function formatMoney(value) {
+  const amount = toAmount(value);
+  if (typeof money === 'function') return money(amount);
+  return '₹' + amount.toLocaleString('en-IN', {maximumFractionDigits:2});
+}
+
+function notify(message, type='info') {
+  if (typeof showToast === 'function') showToast(message, type);
+  else console[type === 'error' ? 'error' : 'log'](message);
+}
+
+function setBudgetNotice(message) {
+  const notice = document.getElementById('budgetLoadNotice');
+  if (!notice) return;
+  notice.textContent = message || '';
+  notice.classList.toggle('show', Boolean(message));
+}
+
+/* Prevent a slow API from leaving the page on Loading forever. */
+function withTimeout(promise, label, milliseconds=15000) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(label + ' request timed out. Check that the backend is running.')), milliseconds);
+  });
+  return Promise.race([Promise.resolve(promise), timeout]).finally(() => clearTimeout(timer));
+}
+
+function normalizeCategory(value) {
+  if (value && typeof value === 'object') {
+    value = value.name ?? value.category_name ?? value.group_name ?? value.label ?? value.title ?? '';
+  }
+
+  const name = String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ');
+
+  /* Map the category names seen in this project's categories table to the page's groups. */
+  const aliases = {
+    'food':'Food', 'foods':'Food', 'food and dining':'Food', 'food dining':'Food',
+    'canteen':'Food', 'canteen food':'Food', 'grocery':'Food', 'groceries':'Food',
+    'shopping':'Shopping', 'personal shopping':'Shopping',
+    'college':'College', 'education':'College', 'academic':'College', 'books':'College',
+    'exam fees':'College', 'examination fees':'College', 'college fees':'College',
+    'transport':'Transport', 'transportation':'Transport', 'travel':'Transport',
+    'bus & auto':'Transport', 'bus and auto':'Transport', 'bus auto':'Transport',
+    'bus':'Transport', 'auto':'Transport',
+    'living':'Living', 'housing':'Living', 'rent':'Living',
+    'bills':'Bills', 'utilities':'Bills', 'utility':'Bills',
+    'mobile recharge':'Bills', 'mobile':'Bills', 'phone recharge':'Bills',
+    'fun':'Fun', 'entertainment':'Fun', 'recreation':'Fun',
+    'health':'Health', 'medical':'Health', 'healthcare':'Health',
+    'other':'Other', 'others':'Other', 'miscellaneous':'Other'
+  };
+
+  if (aliases[name]) return aliases[name];
+  const match = GROUPS.find(group => group.name.toLowerCase() === name);
+  return match ? match.name : '';
+}
+
+function getExpenseGroup(expense) {
+  /* category_group is the alias selected by this project's EXPENSE_SELECT query. */
+  const fields = [
+    expense.category_group,
+    expense.grp,
+    expense.group,
+    expense.group_name,
+    expense.category,
+    expense.category_name,
+    expense.expense_group,
+    expense.expense_group_name
+  ];
+  for (const field of fields) {
+    const normalized = normalizeCategory(field);
+    if (normalized) return normalized;
+  }
+  return '';
+}
+
+function getExpenseAmount(expense) {
+  return toAmount(expense.amount ?? expense.total_amount ?? expense.expense_amount ?? 0);
+}
+
+function normalizeList(response) {
+  if (Array.isArray(response)) return response;
+  if (!response || typeof response !== 'object') return [];
+  for (const key of ['expenses','data','results','items']) {
+    if (Array.isArray(response[key])) return response[key];
+  }
+  return [];
+}
+
+function normalizeGroupBudgets(response) {
+  const raw = response?.budgets ?? response?.group_budgets ?? response?.data ?? response ?? {};
+  const result = {};
+
+  if (Array.isArray(raw)) {
+    raw.forEach(item => {
+      const rawName = item.group_name ?? item.category_name ?? item.group ?? item.category ?? item.name;
+      const category = normalizeCategory(rawName);
+      const amount = item.amount ?? item.budget_amount ?? item.budget ?? item.limit ?? item.limit_amount ?? 0;
+      if (category) result[category] = toAmount(amount);
+    });
+    return result;
+  }
+
+  if (raw && typeof raw === 'object') {
+    Object.entries(raw).forEach(([name, value]) => {
+      const category = normalizeCategory(name);
+      if (!category) return;
+      const amount = value && typeof value === 'object'
+        ? (value.amount ?? value.budget_amount ?? value.budget ?? value.limit ?? value.limit_amount ?? 0)
+        : value;
+      result[category] = toAmount(amount);
+    });
+  }
+  return result;
+}
+
+function getMonthSpent(group=null) {
+  const selected = group ? normalizeCategory(group) : null;
+  return monthExpenses.reduce((sum, expense) => {
+    if (selected && getExpenseGroup(expense) !== selected) return sum;
+    return sum + getExpenseAmount(expense);
+  }, 0);
+}
+
+function renderMonthlyChart(spent, budget) {
+  const canvas = document.getElementById('monthlyChart');
+  if (!canvas || typeof Chart === 'undefined') return;
+  if (monthlyChartI) {
+    monthlyChartI.destroy();
+    monthlyChartI = null;
+  }
+  if (budget <= 0) return;
+
+  monthlyChartI = new Chart(canvas.getContext('2d'), {
+    type:'doughnut',
+    data:{
+      labels:['Spent','Remaining'],
+      datasets:[{
+        data:[Math.min(spent,budget),Math.max(budget-spent,0)],
+        backgroundColor:['#ef4444','#e2e8f0'],
+        borderWidth:0
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:context=>formatMoney(context.parsed)}}
+      },
+      cutout:'75%'
+    }
+  });
+}
+
+function updateMonthlyProgress() {
+  const input = document.getElementById('monthlyBudgetInput');
+  const budget = Math.max(0, toAmount(input?.value));
+  const spent = getMonthSpent();
+  const actualPercentage = budget > 0 ? (spent / budget) * 100 : 0;
+  const percentage = budget > 0 ? Math.min(Math.max(actualPercentage,0),100) : 0;
+
+  document.getElementById('monthlySpent').textContent = formatMoney(spent);
+  const bar = document.getElementById('monthlyProgressBar');
+  bar.style.width = percentage + '%';
+  bar.className = 'progress-fill ' + (actualPercentage >= 100 ? 'danger' : actualPercentage >= 80 ? 'warning' : 'success');
+
+  const status = document.getElementById('monthlyStatus');
+  if (budget <= 0) status.textContent = 'Set a monthly budget above.';
+  else if (spent >= budget) status.textContent = `100% used · ${formatMoney(spent-budget)} over budget`;
+  else status.textContent = `${formatMoney(budget-spent)} remaining · ${percentage.toFixed(1)}% used`;
+
+  renderMonthlyChart(spent,budget);
+}
+
+function renderGroupCards() {
+  const container = document.getElementById('budgetGroups');
+  container.innerHTML = GROUPS.map(group => {
+    const spent = getMonthSpent(group.name);
+    const budget = Math.max(0,toAmount(groupBudgets[group.name]));
+    const actualPercentage = budget > 0 ? (spent / budget) * 100 : 0;
+    const percentage = budget > 0 ? Math.min(Math.max(actualPercentage,0),100) : 0;
+    const reached = budget > 0 && spent >= budget;
+    const color = reached ? 'danger' : percentage >= 80 ? 'warning' : 'success';
+
+    let status = 'No budget set';
+    if (budget > 0) {
+      if (spent > budget) status = `100% used · ${formatMoney(spent-budget)} over budget`;
+      else if (reached) status = '100% used · Budget limit reached';
+      else status = `${percentage.toFixed(1)}% used · ${formatMoney(budget-spent)} left`;
+    }
+
+    return `
+      <div class="budget-group-card">
+        <div class="grp-header">
+          <span class="grp-icon">${group.icon}</span>
+          <div>
+            <div class="grp-name">${group.name}</div>
+            <div class="grp-spent">Spent: ${formatMoney(spent)} this month</div>
+          </div>
+        </div>
+        ${budget > 0 ? `
+          <div class="progress-track" style="margin-bottom:6px;">
+            <div class="progress-fill ${color}" style="width:${percentage}%;"></div>
+          </div>
+          <div class="text-muted" style="font-size:0.78rem;">${status}</div>
+        ` : `<div class="text-muted" style="font-size:0.78rem;">No budget set</div>`}
+        <div class="grp-input-row">
+          <span class="rupee-prefix">₹</span>
+          <input type="number" class="form-control" id="grp_${group.name}" value="${budget || ''}" placeholder="Set budget…" min="0" step="1" style="flex:1;">
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderBudgetChart() {
+  const canvas = document.getElementById('budgetChart');
+  if (!canvas || typeof Chart === 'undefined') return;
+  if (budgetChartI) {
+    budgetChartI.destroy();
+    budgetChartI = null;
+  }
+  const labels = GROUPS.map(group => group.name);
+  const spent = GROUPS.map(group => getMonthSpent(group.name));
+  const budgets = GROUPS.map(group => toAmount(groupBudgets[group.name]));
+
+  budgetChartI = new Chart(canvas.getContext('2d'), {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'Budget',data:budgets,backgroundColor:'rgba(99,102,241,0.3)',borderColor:'#6366f1',borderWidth:1,borderRadius:4},
+        {label:'Spent',data:spent,backgroundColor:'rgba(239,68,68,0.6)',borderColor:'#ef4444',borderWidth:1,borderRadius:4}
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{color:'#64748b',font:{size:11}}}},
+      scales:{
+        x:{ticks:{color:'#64748b',font:{size:11}}},
+        y:{beginAtZero:true,ticks:{color:'#64748b',font:{size:11},callback:value=>'₹'+Number(value).toLocaleString('en-IN')}}
+      }
+    }
+  });
+}
+
+async function tryUnfilteredExpenseFallback(month) {
+  /* Only use an unfiltered response if it contains dates that allow safe client-side filtering. */
+  const response = await withTimeout(API_CLIENT.get('/expenses'),'All expenses',12000);
+  const all = normalizeList(response);
+  const dateFields = ['expense_date','date','transaction_date','spent_at','created_at'];
+  const dated = all.filter(item => dateFields.some(key => item[key] !== undefined && item[key] !== null && item[key] !== ''));
+  if (dated.length === 0) {
+    return {
+      expenses:[],
+      notice: all.length
+        ? `The month-filtered expense API returned no records. The unfiltered API returned ${all.length} expense(s), but those records do not include an expense date. The page cannot safely decide which month they belong to. Check the backend GET /api/expenses month filter and ensure it returns expenses for ${month}.`
+        : `No expense records were returned for ${month}. Add expenses or check the backend GET /api/expenses route.`
+    };
+  }
+
+  const filtered = dated.filter(item => {
+    const rawDate = dateFields.map(key => item[key]).find(value => value !== undefined && value !== null && value !== '');
+    const dateText = String(rawDate).slice(0,10);
+    return dateText.slice(0,7) === month;
+  });
+  return {expenses:filtered,notice:filtered.length ? '' : `The all-expenses API returned dated records, but none belong to ${month}.`};
+}
+
+async function init() {
+  const container = document.getElementById('budgetGroups');
+  const loadErrors = [];
+  let month = getCurrentMonth();
+
+  try {
+    const user = await withTimeout(Promise.resolve().then(() => requireAuth()),'Authentication',15000);
+    buildNav('budgets',user);
+
+    /* Load each endpoint independently: one failed request will not block the whole page. */
+    const results = await Promise.allSettled([
+      withTimeout(API_CLIENT.get('/budget'),'Monthly budget'),
+      withTimeout(API_CLIENT.get('/group-budgets'),'Group budgets'),
+      withTimeout(API_CLIENT.get('/expenses?month=' + encodeURIComponent(month)),'Monthly expenses')
+    ]);
+
+    if (results[0].status === 'fulfilled') {
+      const bud = results[0].value;
+      monthlyBudget = toAmount(bud?.amount ?? bud?.monthly_budget ?? bud?.budget_amount ?? bud?.limit ?? 0);
+    } else {
+      loadErrors.push('Monthly budget could not be loaded: ' + results[0].reason.message);
+    }
+
+    if (results[1].status === 'fulfilled') {
+      groupBudgets = normalizeGroupBudgets(results[1].value);
+    } else {
+      loadErrors.push('Category budgets could not be loaded: ' + results[1].reason.message);
+    }
+
+    if (results[2].status === 'fulfilled') {
+      monthExpenses = normalizeList(results[2].value);
+      console.log('Monthly expenses API response:', results[2].value);
+    } else {
+      loadErrors.push('Monthly expenses could not be loaded: ' + results[2].reason.message);
+      monthExpenses = [];
+    }
+
+    /* If month endpoint gives [], safely test the unfiltered endpoint for dated records. */
+    if (monthExpenses.length === 0 && results[2].status === 'fulfilled') {
+      try {
+        const fallback = await tryUnfilteredExpenseFallback(month);
+        monthExpenses = fallback.expenses;
+        if (fallback.notice) loadErrors.push(fallback.notice);
+      } catch (error) {
+        loadErrors.push('Could not check all expenses: ' + error.message);
+      }
+    }
+
+    document.getElementById('monthlyBudgetInput').value = monthlyBudget || '';
+
+    /* Always render the cards and charts after the requests settle, even if one API failed. */
+    renderGroupCards();
+    updateMonthlyProgress();
+    renderBudgetChart();
+
+    console.log('BUDGET PAGE READY');
+    console.log('Current month:', month);
+    console.log('Category budgets:', groupBudgets);
+    console.log('Month expenses:', monthExpenses);
+    console.table(monthExpenses.map(expense => ({
+      id:expense.id,
+      title:expense.title,
+      amount:expense.amount,
+      category:expense.category,
+      category_group:expense.category_group,
+      expense_date:expense.expense_date
+    })));
+    console.log('Category totals:', Object.fromEntries(GROUPS.map(group => [group.name,getMonthSpent(group.name)])));
+
+    if (loadErrors.length) {
+      setBudgetNotice(loadErrors.join(' '));
+      console.warn('Budget page warnings:', loadErrors);
+    } else {
+      setBudgetNotice('');
+    }
+
+    if (typeof Chart === 'undefined') {
+      loadErrors.push('Chart.js could not be loaded. The budget figures are available, but charts are unavailable. Check your internet connection.');
+      setBudgetNotice(loadErrors.join(' '));
+    }
+
+  } catch (error) {
+    console.error('Budget page initialization failed:',error);
+    container.innerHTML = '<div class="text-muted">The Budgets page could not initialize. Check authentication and the backend connection, then refresh.</div>';
+    setBudgetNotice(error.message || 'The page could not initialize.');
+    notify(error.message || 'Unable to initialize Budgets page.','error');
+  }
+}
+
+/* Refresh the monthly progress immediately when the monthly amount is edited. */
+document.getElementById('monthlyBudgetInput').addEventListener('input',updateMonthlyProgress);
+
+/* Save using the same existing API endpoints and payload structure. */
+document.getElementById('saveBudgetsBtn').addEventListener('click',async()=>{
+  const button = document.getElementById('saveBudgetsBtn');
+  button.disabled = true;
+  button.textContent = 'Saving…';
+
+  try {
+    const monthlyAmount = Math.max(0,toAmount(document.getElementById('monthlyBudgetInput').value));
+    const budgets = {};
+    GROUPS.forEach(group=>{
+      const input = document.getElementById('grp_' + group.name);
+      budgets[group.name] = Math.max(0,toAmount(input ? input.value : 0));
+    });
+
+    await withTimeout(API_CLIENT.put('/budget',{amount:monthlyAmount}),'Save monthly budget');
+    await withTimeout(API_CLIENT.put('/group-budgets',{budgets}),'Save category budgets');
+
+    monthlyBudget = monthlyAmount;
+    groupBudgets = budgets;
+    renderGroupCards();
+    updateMonthlyProgress();
+    renderBudgetChart();
+    notify('Budgets saved!','success');
+  } catch (error) {
+    console.error('Saving budgets failed:',error);
+    notify(error.message || 'Unable to save budgets.','error');
+  } finally {
+    button.disabled = false;
+    button.textContent = '💾 Save All Budgets';
+  }
+});
+
+init();
+</script>
+</body>
+</html>

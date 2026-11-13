@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard —Finlumiq</title>
+<meta name="description" content="Finlumiq student financial dashboard: expenses, income, budgets, semesters, fees, savings, scholarships and more.">
+<link rel="stylesheet" href="css/app.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  .dash-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
+  @media(max-width:850px){.dash-grid{grid-template-columns:1fr}}
+  .quick-add-form{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr auto;gap:10px;align-items:end}
+  @media(max-width:900px){.quick-add-form{grid-template-columns:1fr 1fr}}
+  @media(max-width:520px){.quick-add-form{grid-template-columns:1fr}}
+  .dash-alert{border-radius:var(--radius);padding:14px 18px;margin-bottom:18px;border:1px solid var(--border);background:var(--surface)}
+  .dash-alert.danger{border-color:#ef4444;background:rgba(239,68,68,.08)}
+  .dash-alert.warning{border-color:#f59e0b;background:rgba(245,158,11,.10)}
+  .dash-alert ul{margin:8px 0 0 18px;padding:0;font-size:.88rem}.dash-alert li{margin:4px 0}
+  .dash-warning{padding:10px 13px;border:1px solid var(--border);border-radius:var(--radius);color:var(--muted);font-size:.83rem;margin-bottom:16px}
+  .budget-nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;text-align:center;margin-bottom:14px}
+  .budget-num{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 8px;min-width:0}
+  .budget-num-val{font-size:clamp(1rem,2vw,1.4rem);font-weight:800;overflow-wrap:anywhere}
+  .budget-num-lbl{font-size:.76rem;color:var(--muted);margin-top:3px}
+  @media(max-width:480px){.budget-nums{grid-template-columns:1fr}}
+  .gb-row{margin-top:12px}.gb-head{display:flex;justify-content:space-between;gap:10px;font-size:.82rem;margin-bottom:5px}
+  .glance-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:20px}
+  .glance-tile{display:block;color:inherit;text-decoration:none;transition:transform .15s,box-shadow .15s}
+  .glance-tile:hover,.module-tile:hover{transform:translateY(-2px);box-shadow:var(--shadow-md,0 6px 18px rgba(0,0,0,.12))}
+  .glance-top{display:flex;justify-content:space-between;align-items:center;font-size:.82rem;color:var(--muted);margin-bottom:6px}
+  .glance-val{font-size:1.35rem;font-weight:800;overflow-wrap:anywhere}.glance-sub{font-size:.78rem;color:var(--muted);margin-top:4px;line-height:1.45}
+  .glance-tile .progress-track{margin-top:9px}
+  .module-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin-bottom:22px}
+  .module-tile{display:flex;align-items:flex-start;gap:11px;min-height:92px;padding:15px;text-decoration:none;color:inherit;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface);transition:transform .15s,box-shadow .15s,border-color .15s}
+  .module-tile:focus-visible,.glance-tile:focus-visible{outline:3px solid var(--primary,#6366f1);outline-offset:3px}
+  .module-icon{width:40px;height:40px;display:grid;place-items:center;flex:0 0 40px;border-radius:12px;background:var(--surface-2);font-size:1.25rem}
+  .module-title{font-weight:750;font-size:.88rem;margin:2px 0 4px}.module-desc{font-size:.75rem;line-height:1.4;color:var(--muted)}
+  .goal-mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:500px){.goal-mini-grid{grid-template-columns:1fr}}
+  .goal-mini-card{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:13px;min-width:0}
+  .fee-row{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--border)}.fee-row:last-child{border-bottom:0}
+  .fee-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .dashboard-section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .dashboard-section-head .section-title{margin-bottom:0}
+  .quick-add-hint{font-size:.78rem;color:var(--muted);margin-top:8px}
+  .module-more{font-size:.76rem;color:var(--muted);white-space:nowrap}
+  .empty-inline{font-size:.86rem;color:var(--muted);padding:8px 0}
+  .data-label{font-size:.78rem;color:var(--muted)}
+  .negative-text{color:var(--danger,#dc2626)}
+</style>
+</head>
+<body>
+<div id="appNav"></div>
+<header class="topbar">
+  <a class="topbar-brand" href="dashboard.html" aria-label="Finlumiq dashboard"><div class="topbar-logo">🎓</div><span class="topbar-title">Finlumiq</span></a>
+  <div class="topbar-right">
+    <span class="topbar-page-title" aria-current="page">Dashboard</span>
+    <button class="theme-toggle-btn" type="button" aria-label="Toggle theme">🌙</button>
+    <button id="navOpenBtn" class="nav-open-btn" type="button" aria-label="Open menu">☰</button>
+  </div>
+</header>
+
+<main class="page-wrap" id="mainContent">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Welcome back, <span id="userName">Student</span> 👋</h1>
+      <p id="dateLabel">Your student financial overview</p>
+    </div>
+    <a href="expenses.html" class="btn btn-primary">＋ Add Expense</a>
+  </div>
+
+  <div id="alertBanner" class="dash-alert" hidden></div>
+  <div id="dashboardLoadWarning" class="dash-warning" hidden></div>
+
+  <!-- Core database-backed numbers -->
+  <section class="stat-cards" aria-label="Financial overview">
+    <a class="stat-card" href="reports.html" style="color:inherit;text-decoration:none">
+      <div class="stat-label">Total Balance</div><div class="stat-icon">💰</div><div class="stat-value" id="statBalance">₹0</div><div class="stat-sub" id="statBalanceSub">Income minus expenses</div>
+    </a>
+    <a class="stat-card success" href="income.html" style="color:inherit;text-decoration:none">
+      <div class="stat-label">Month Income</div><div class="stat-icon">📈</div><div class="stat-value" id="statMonthIncome">₹0</div><div class="stat-sub" id="monthLabel2"></div>
+    </a>
+    <a class="stat-card warning" href="expenses.html" style="color:inherit;text-decoration:none">
+      <div class="stat-label">Month Expenses</div><div class="stat-icon">📉</div><div class="stat-value" id="statMonthExp">₹0</div><div class="stat-sub" id="statMonthExpSub"></div>
+    </a>
+    <a class="stat-card info" href="budgets.html" style="color:inherit;text-decoration:none">
+      <div class="stat-label">Budget Remaining</div><div class="stat-icon">🎯</div><div class="stat-value" id="statBudgetLeft">₹0</div><div class="stat-sub" id="budgetLeftSub">No budget set</div>
+    </a>
+  </section>
+
+  <!-- Monthly and category budget -->
+  <section class="card mb-24" id="budgetCard">
+    <div class="dashboard-section-head">
+      <div class="section-title">🎯 Monthly Budget</div>
+      <div class="d-flex align-center gap-8"><span id="budgetBadge" class="badge badge-muted">Not set</span><a href="budgets.html" class="btn btn-sm btn-secondary">Manage budgets →</a></div>
+    </div>
+    <div class="budget-nums">
+      <div class="budget-num"><div class="budget-num-val" id="bTotal">Not set</div><div class="budget-num-lbl">Total budget</div></div>
+      <div class="budget-num"><div class="budget-num-val" id="bSpent">₹0</div><div class="budget-num-lbl">Spent this month</div></div>
+      <div class="budget-num"><div class="budget-num-val" id="bLeft">—</div><div class="budget-num-lbl">Remaining of total</div></div>
+    </div>
+    <div class="progress-track"><div class="progress-fill success" id="bBar" style="width:0%"></div></div>
+    <div class="text-muted mt-8" id="bNote" style="font-size:.82rem"></div>
+    <div id="groupBudgets"></div>
+  </section>
+
+  <!-- Every project page has a clickable card -->
+  <section aria-labelledby="modulesHeading">
+    <div class="dashboard-section-head"><div class="section-title" id="modulesHeading">🧭 Explore Finlumiq</div><span class="module-more">Select any card to open that page</span></div>
+    <div class="module-grid" id="moduleGrid">
+      <a class="module-tile" href="expenses.html"><span class="module-icon">💸</span><span><div class="module-title">Expenses</div><div class="module-desc">Add, edit and review spending</div></span></a>
+      <a class="module-tile" href="income.html"><span class="module-icon">💵</span><span><div class="module-title">Income</div><div class="module-desc">Track pocket money and income</div></span></a>
+      <a class="module-tile" href="budgets.html"><span class="module-icon">🎯</span><span><div class="module-title">Budgets</div><div class="module-desc">Monthly and category limits</div></span></a>
+      <a class="module-tile" href="semesters.html"><span class="module-icon">📅</span><span><div class="module-title">Semesters</div><div class="module-desc">Academic periods and spending</div></span></a>
+      <a class="module-tile" href="college-fees.html"><span class="module-icon">🏫</span><span><div class="module-title">College Fees</div><div class="module-desc">Due dates and payment history</div></span></a>
+      <a class="module-tile" href="savings-goals.html"><span class="module-icon">🏦</span><span><div class="module-title">Savings Goals</div><div class="module-desc">Track savings targets</div></span></a>
+      <a class="module-tile" href="scholarships.html"><span class="module-icon">🎓</span><span><div class="module-title">Scholarships</div><div class="module-desc">Awards and application deadlines</div></span></a>
+      <a class="module-tile" href="split-expenses.html"><span class="module-icon">🤝</span><span><div class="module-title">Split Expenses</div><div class="module-desc">Shared costs and settlements</div></span></a>
+      <a class="module-tile" href="ai-assistant.html"><span class="module-icon">✨</span><span><div class="module-title">AI Assistant</div><div class="module-desc">Ask questions about your finances</div></span></a>
+      <a class="module-tile" href="receipt-scanner.html"><span class="module-icon">🧾</span><span><div class="module-title">Receipt Scanner</div><div class="module-desc">Scan receipts to capture expenses</div></span></a>
+      <a class="module-tile" href="reports.html"><span class="module-icon">📊</span><span><div class="module-title">Reports</div><div class="module-desc">Review spending and trends</div></span></a>
+      <a class="module-tile" href="reminders.html"><span class="module-icon">🔔</span><span><div class="module-title">Reminders</div><div class="module-desc">Upcoming fees and deadlines</div></span></a>
+      <a class="module-tile" href="profile-settings.html"><span class="module-icon">👤</span><span><div class="module-title">Profile & Settings</div><div class="module-desc">Manage your account</div></span></a>
+    </div>
+  </section>
+
+  <!-- A glance at connected modules -->
+  <section aria-labelledby="glanceHeading">
+    <div class="dashboard-section-head"><div class="section-title" id="glanceHeading">📋 Your Student Finance at a Glance</div><a href="reports.html" class="btn btn-sm btn-secondary">Open Reports →</a></div>
+    <div class="glance-grid" id="glanceGrid"><div class="loading-state"><div class="spinner"></div><span>Loading dashboard data…</span></div></div>
+  </section>
+
+  <!-- Quick add expense (existing functionality retained) -->
+  <section class="card mb-24">
+    <div class="dashboard-section-head"><div class="section-title">⚡ Quick Add Expense</div><a href="expenses.html" class="btn btn-sm btn-secondary">Full expense manager →</a></div>
+    <form id="quickAddForm" class="quick-add-form" novalidate>
+      <div class="form-group"><label class="form-label" for="qaTitle">What did you spend on?</label><input id="qaTitle" type="text" class="form-control" placeholder="e.g. Canteen lunch" maxlength="150" required></div>
+      <div class="form-group"><label class="form-label" for="qaAmount">Amount (₹)</label><input id="qaAmount" type="number" class="form-control" placeholder="0.00" min="0.01" step="0.01" required></div>
+      <div class="form-group"><label class="form-label" for="qaCategory">Category</label><select id="qaCategory" class="form-control" required><option value="">Loading categories…</option></select></div>
+      <div class="form-group"><label class="form-label" for="qaDate">Date</label><input id="qaDate" type="date" class="form-control" required></div>
+      <div class="form-group"><label class="form-label" for="qaBtn">&nbsp;</label><button type="submit" class="btn btn-primary" id="qaBtn">Add</button></div>
+    </form>
+    <div id="qaError" class="auth-message error mt-8" hidden></div>
+    <div class="quick-add-hint">Your expense is saved through your existing expense API and then the dashboard refreshes.</div>
+  </section>
+
+  <div class="dash-grid">
+    <div style="display:grid;gap:20px;align-content:start">
+      <section class="card" id="semesterCard">
+        <div class="dashboard-section-head"><div class="section-title">📅 Active Semester</div><a href="semesters.html" class="btn btn-sm btn-secondary">View semesters →</a></div>
+        <div id="semesterContent"><div class="empty-inline">Loading semester…</div></div>
+      </section>
+      <section class="card">
+        <div class="dashboard-section-head"><div class="section-title">🏫 College Fees Due</div><a href="college-fees.html" class="btn btn-sm btn-secondary">View all →</a></div>
+        <div id="upcomingFees"><div class="empty-inline">Loading fees…</div></div>
+      </section>
+      <section class="card">
+        <div class="dashboard-section-head"><div class="section-title">🏦 Savings Goals</div><a href="savings-goals.html" class="btn btn-sm btn-secondary">View all →</a></div>
+        <div class="goal-mini-grid" id="goalGrid"><div class="empty-inline" style="grid-column:1/-1">Loading goals…</div></div>
+      </section>
+    </div>
+    <div style="display:grid;gap:20px;align-content:start">
+      <section class="card">
+        <div class="section-title">📊 Spending by Group (this month)</div>
+        <div class="chart-wrap chart-wrap-sm" id="groupChartWrap" style="height:230px"><canvas id="groupChart"></canvas></div>
+        <div id="groupChartEmpty" class="empty-state" style="padding:35px" hidden><div class="empty-icon">📊</div><p>No expenses recorded this month.</p></div>
+      </section>
+      <section class="card">
+        <div class="section-title">📈 Income vs Expenses (last 6 months)</div>
+        <div class="chart-wrap chart-wrap-sm" id="trendChartWrap" style="height:230px"><canvas id="trendChart"></canvas></div>
+        <div id="trendChartEmpty" class="empty-state" style="padding:35px" hidden><div class="empty-icon">📈</div><p>No financial history available yet.</p></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="dash-grid mt-16">
+    <section class="card">
+      <div class="dashboard-section-head"><div class="section-title">🕑 Recent Expenses</div><a href="expenses.html" class="btn btn-sm btn-secondary">View all →</a></div>
+      <div id="recentExpenses"><div class="empty-inline">Loading expenses…</div></div>
+    </section>
+    <section class="card">
+      <div class="dashboard-section-head"><div class="section-title">💵 Recent Income</div><a href="income.html" class="btn btn-sm btn-secondary">View all →</a></div>
+      <div id="recentIncome"><div class="empty-inline">Loading income…</div></div>
+    </section>
+  </div>
+</main>
+
+<!-- Shared confirmation modal retained for common.js compatibility -->
+<div id="confirmModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+  <div class="modal">
+    <div class="modal-body" style="text-align:center;padding:32px 24px"><div style="font-size:3rem;margin-bottom:16px">⚠️</div><div id="confirmTitle" style="font-size:1.1rem;font-weight:700;margin-bottom:8px"></div><div id="confirmBody" style="color:var(--muted);font-size:.95rem"></div></div>
+    <div class="modal-footer"><button id="confirmNo" class="btn btn-secondary">Cancel</button><button id="confirmYes" class="btn btn-danger">Confirm</button></div>
+  </div>
+</div>
+
+<script src="js/common.js"></script>
+<script src="js/nav.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  if (typeof initTheme === 'function') initTheme();
+
+  const $ = id => document.getElementById(id);
+  const chartColors = ['#6366f1','#8b5cf6','#06b6d4','#22c55e','#f59e0b','#ef4444','#ec4899','#14b8a6','#f97316'];
+  const charts = { group: null, trend: null };
+  let categories = [];
+  let dashboardData = null;
+
+  const currentMonthKey = () => {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  };
+  const localTodayISO = () => {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  };
+  const toDateString = value => {
+    if (!value) return '';
+    if (value instanceof Date && !Number.isNaN(value.getTime())) return value.getFullYear() + '-' + String(value.getMonth()+1).padStart(2,'0') + '-' + String(value.getDate()).padStart(2,'0');
+    const s = String(value).trim();
+    const m = s.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (m) return m[1];
+    const parsed = new Date(s);
+    if (Number.isNaN(parsed.getTime())) return '';
+    return parsed.getFullYear() + '-' + String(parsed.getMonth()+1).padStart(2,'0') + '-' + String(parsed.getDate()).padStart(2,'0');
+  };
+  const numeric = value => {
+    if (typeof value === 'string') value = value.replace(/[₹,\s]/g, '');
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 0;
+  };
+  const amountSum = (arr, field) => arr.reduce((total, row) => total + numeric(row[field]), 0);
+  const safeMoney = value => typeof money === 'function' ? money(numeric(value)) : '₹' + numeric(value).toLocaleString('en-IN', {maximumFractionDigits:2});
+  const signedMoney = value => numeric(value) < 0 ? '-' + safeMoney(Math.abs(numeric(value))) : safeMoney(value);
+  const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const niceDate = value => {
+    const s = toDateString(value);
+    if (!s) return 'Date not available';
+    const [y,m,d] = s.split('-').map(Number);
+    return new Date(y,m-1,d).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+  };
+  const barClass = pct => pct >= 100 ? 'danger' : pct >= 80 ? 'warning' : 'success';
+  const arrayFrom = (value, candidates) => {
+    if (Array.isArray(value)) return value;
+    if (!value || typeof value !== 'object') return [];
+    for (const key of candidates || ['items','data','results','expenses','income','fees','goals','scholarships','categories']) {
+      if (Array.isArray(value[key])) return value[key];
+    }
+    return [];
+  };
+  const groupName = row => {
+    let value = row?.category_group ?? row?.group ?? row?.group_name ?? row?.grp ?? row?.category?.group ?? '';
+    if (typeof value === 'object' && value) value = value.name ?? value.group ?? value.label ?? '';
+    if (!value) {
+      const cat = String(row?.category ?? row?.category_name ?? '').trim().toLowerCase();
+      const aliases = {'canteen':'Food','food':'Food','groceries':'Food','mobile recharge':'Bills','mobile':'Bills','bus & auto':'Transport','transport':'Transport','exam fees':'College','college':'College','books':'College'};
+      value = aliases[cat] || row?.category || row?.category_name || 'Other';
+    }
+    const cleaned = String(value || 'Other').trim();
+    const canonical = {
+      'food':'Food', 'shopping':'Shopping', 'college':'College', 'education':'College',
+      'transport':'Transport', 'transportation':'Transport', 'living':'Living',
+      'bills':'Bills', 'fun':'Fun', 'entertainment':'Fun', 'health':'Health', 'other':'Other'
+    };
+    return canonical[cleaned.toLowerCase()] || cleaned;
+  };
+  const normalizeExpense = row => ({
+    ...row,
+    amount: numeric(row?.amount ?? row?.total_amount ?? row?.expense_amount),
+    date: toDateString(row?.date ?? row?.expense_date ?? row?.transaction_date ?? row?.created_at),
+    category: String(row?.category_name ?? (typeof row?.category === 'string' ? row.category : row?.category?.name) ?? row?.title_category ?? groupName(row)),
+    group: groupName(row),
+    title: String(row?.title ?? row?.description ?? 'Expense'),
+    icon: row?.icon || '💳'
+  });
+  const normalizeIncome = row => ({
+    ...row,
+    amount: numeric(row?.amount ?? row?.total_amount ?? row?.income_amount),
+    date: toDateString(row?.date ?? row?.income_date ?? row?.received_date ?? row?.transaction_date ?? row?.created_at),
+    source: String(row?.source ?? row?.title ?? row?.income_source ?? row?.description ?? 'Income')
+  });
+  const normalizeFee = row => {
+    const total = numeric(row?.total_amount ?? row?.amount ?? row?.fee_amount);
+    const paid = numeric(row?.paid ?? row?.paid_amount ?? row?.total_paid);
+    const remaining = row?.remaining != null ? numeric(row.remaining) : Math.max(total - paid, 0);
+    return {...row, fee_title:String(row?.fee_title ?? row?.title ?? row?.fee_name ?? 'College fee'), total_amount:total, paid, remaining, due_date:toDateString(row?.due_date)};
+  };
+  const normalizeGoal = row => ({
+    ...row,
+    goal_title:String(row?.goal_title ?? row?.title ?? row?.name ?? 'Savings goal'),
+    current_saved_amount:numeric(row?.current_saved_amount ?? row?.saved_amount ?? row?.current_amount),
+    target_amount:numeric(row?.target_amount ?? row?.target ?? row?.goal_amount),
+    status:String(row?.status ?? 'Active'),
+    target_date:toDateString(row?.target_date ?? row?.deadline)
+  });
+  const normalizeScholarship = row => ({
+    ...row,
+    scholarship_name:String(row?.scholarship_name ?? row?.name ?? row?.title ?? 'Scholarship'),
+    awarded_amount:numeric(row?.awarded_amount ?? row?.amount_awarded ?? row?.amount),
+    total_received:numeric(row?.total_received ?? row?.received_amount ?? row?.amount_received),
+    application_deadline:toDateString(row?.application_deadline ?? row?.deadline)
+  });
+  const normalizeGroupBudgets = response => {
+    const raw = response?.budgets ?? response?.data ?? response ?? {};
+    const out = {};
+    if (Array.isArray(raw)) {
+      raw.forEach(item => {
+        const key = String(item?.group ?? item?.group_name ?? item?.category ?? item?.category_name ?? item?.name ?? '').trim();
+        if (key) out[key] = numeric(item?.amount ?? item?.budget_amount ?? item?.budget ?? item?.limit);
+      });
+    } else if (raw && typeof raw === 'object') {
+      Object.entries(raw).forEach(([key,value]) => {
+        const amount = value && typeof value === 'object' ? (value.amount ?? value.budget_amount ?? value.budget ?? value.limit) : value;
+        out[key] = numeric(amount);
+      });
+    }
+    return out;
+  };
+  const monthRecords = (records, month) => records.filter(r => r.date && r.date.slice(0,7) === month);
+  const daysUntil = date => {
+    const s = toDateString(date);
+    if (!s) return 99999;
+    const [y,m,d] = s.split('-').map(Number);
+    const due = new Date(y,m-1,d); due.setHours(0,0,0,0);
+    const now = new Date(); now.setHours(0,0,0,0);
+    return Math.round((due - now) / 86400000);
+  };
+
+  function setDateLabels() {
+    const now = new Date();
+    $('dateLabel').textContent = now.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    $('monthLabel2').textContent = now.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+    $('qaDate').value = localTodayISO();
+  }
+
+  async function loadCategories() {
+    const select = $('qaCategory');
+    try {
+      const response = await API_CLIENT.get('/categories');
+      categories = arrayFrom(response, ['categories','items','data','results']).map(c => ({
+        id:c.id,
+        name:String(c.name ?? c.category_name ?? 'Category'),
+        group:String(c.group ?? c.grp ?? c.category_group ?? c.group_name ?? 'Other'),
+        icon:c.icon || '📌'
+      })).filter(c => c.id != null);
+      select.innerHTML = '<option value="">Select category…</option>';
+      const groups = {};
+      categories.forEach(c => (groups[c.group] ||= []).push(c));
+      Object.keys(groups).sort((a,b)=>a.localeCompare(b)).forEach(group => {
+        const optgroup = document.createElement('optgroup'); optgroup.label = group;
+        groups[group].sort((a,b)=>a.name.localeCompare(b.name)).forEach(c => {
+          const option = document.createElement('option'); option.value = c.id; option.textContent = c.icon + ' ' + c.name; optgroup.appendChild(option);
+        });
+        select.appendChild(optgroup);
+      });
+      if (!categories.length) select.innerHTML = '<option value="">No categories available</option>';
+    } catch (error) {
+      console.error('Dashboard categories API failed:', error);
+      select.innerHTML = '<option value="">Categories unavailable</option>';
+    }
+  }
+
+  async function getOptional(endpoint, key) {
+    try { return {ok:true, value:await API_CLIENT.get(endpoint), key}; }
+    catch (error) { console.warn('Dashboard API failed:', endpoint, error); return {ok:false, value:null, key, error}; }
+  }
+
+  async function loadAll() {
+    const definitions = [
+      ['dashboard','/dashboard'],['budget','/budget'],['groupBudgets','/group-budgets'],
+      ['expenses','/expenses'],['income','/income'],['fees','/fees'],['goals','/savings-goals'],
+      ['scholarships','/scholarships'],['reminders','/reminders']
+    ];
+    const results = await Promise.all(definitions.map(([key,url]) => getOptional(url,key)));
+    const data = {}; const failed = [];
+    results.forEach(result => { if (result.ok) data[result.key] = result.value; else failed.push(result.key); });
+
+    const dashboardRaw = data.dashboard?.dashboard ?? data.dashboard?.data ?? data.dashboard ?? {};
+    const expenses = arrayFrom(data.expenses, ['expenses','items','data','results']).map(normalizeExpense);
+    const income = arrayFrom(data.income, ['income','items','data','results','incomes']).map(normalizeIncome);
+    const fees = arrayFrom(data.fees, ['fees','items','data','results']).map(normalizeFee);
+    const goals = arrayFrom(data.goals, ['goals','items','data','results']).map(normalizeGoal);
+    const scholarships = arrayFrom(data.scholarships, ['scholarships','items','data','results']).map(normalizeScholarship);
+    data.dashboard = dashboardRaw && typeof dashboardRaw === 'object' ? dashboardRaw : {};
+    data.expenses = expenses;
+    data.income = income;
+    data.fees = fees;
+    data.goals = goals;
+    data.scholarships = scholarships;
+    data.groupBudgets = normalizeGroupBudgets(data.groupBudgets);
+    data.budget = data.budget?.budget ?? data.budget?.data ?? data.budget ?? {};
+    data.reminders = data.reminders?.reminders ?? data.reminders?.data ?? data.reminders ?? null;
+    dashboardData = data;
+
+    const warning = $('dashboardLoadWarning');
+    if (failed.length) {
+      warning.textContent = 'Some dashboard sections could not load (' + failed.join(', ') + '). Available sections are still shown. Check the Flask terminal or Network tab for failed API requests.';
+      warning.hidden = false;
+    } else {
+      warning.hidden = true;
+    }
+    renderDashboard(data);
+  }
+
+  function renderDashboard(data) {
+    const month = currentMonthKey();
+    const expenses = data.expenses;
+    const income = data.income;
+    const monthExpenses = monthRecords(expenses, month);
+    const monthIncomeRecords = monthRecords(income, month);
+    const spent = amountSum(monthExpenses,'amount');
+    const monthIncome = amountSum(monthIncomeRecords,'amount');
+    const totalExpenses = amountSum(expenses,'amount');
+    const totalIncome = amountSum(income,'amount');
+    const balance = data.dashboard.balance != null ? numeric(data.dashboard.balance) : totalIncome - totalExpenses;
+    const budget = numeric(data.budget.amount ?? data.budget.monthly_budget ?? data.budget.budget_amount ?? data.dashboard.monthly_budget ?? 0);
+
+    $('statBalance').textContent = signedMoney(balance);
+    $('statBalanceSub').textContent = safeMoney(totalIncome) + ' income − ' + safeMoney(totalExpenses) + ' expenses';
+    $('statMonthIncome').textContent = safeMoney(monthIncome);
+    $('statMonthExp').textContent = safeMoney(spent);
+    $('statMonthExpSub').textContent = monthExpenses.length + ' transaction' + (monthExpenses.length === 1 ? '' : 's');
+    renderBudget(budget,spent,data.groupBudgets,monthExpenses);
+    renderAlerts(data.reminders);
+    renderGlance({data,monthExpenses,monthIncomeRecords,spent,monthIncome});
+    renderSemester(data.dashboard.active_semester ?? data.dashboard.semester ?? null);
+    renderFees(data.fees);
+    renderGoals(data.goals);
+    renderRecentExpenses([...expenses].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5));
+    renderRecentIncome([...income].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5));
+    renderCharts();
+  }
+
+  function renderBudget(budget, spent, groupBudgets, monthExpenses) {
+    const left = budget - spent;
+    const pct = budget > 0 ? spent / budget * 100 : 0;
+    const hasBudget = budget > 0;
+    $('bTotal').textContent = hasBudget ? safeMoney(budget) : 'Not set';
+    $('bSpent').textContent = safeMoney(spent);
+    $('bLeft').textContent = hasBudget ? signedMoney(left) : '—';
+    $('bLeft').className = 'budget-num-val' + (left < 0 ? ' negative-text' : '');
+    $('bBar').className = 'progress-fill ' + barClass(pct);
+    $('bBar').style.width = Math.min(Math.max(pct,0),100) + '%';
+    $('statBudgetLeft').textContent = hasBudget ? signedMoney(left) : '—';
+    $('budgetLeftSub').textContent = hasBudget ? (left >= 0 ? 'of ' + safeMoney(budget) + ' total' : 'Over budget by ' + safeMoney(-left)) : 'No budget set';
+    const badge = $('budgetBadge');
+    if (!hasBudget) { badge.className='badge badge-muted'; badge.textContent='Not set'; }
+    else if (pct >= 100) { badge.className='badge badge-danger'; badge.textContent='Limit reached'; }
+    else if (pct >= 80) { badge.className='badge badge-warning'; badge.textContent=pct.toFixed(0)+'% used — slow down'; }
+    else { badge.className='badge badge-success'; badge.textContent='On track · '+pct.toFixed(0)+'% used'; }
+    if (!hasBudget) $('bNote').innerHTML = 'Set a monthly budget to track your remaining money. <a href="budgets.html" class="text-primary">Set budget →</a>';
+    else if (left <= 0) $('bNote').textContent = 'You have reached or exceeded your monthly budget.';
+    else {
+      const now = new Date(); const remainingDays = new Date(now.getFullYear(),now.getMonth()+1,0).getDate()-now.getDate()+1;
+      $('bNote').textContent = 'About ' + safeMoney(left / remainingDays) + ' per day for the remaining ' + remainingDays + ' day' + (remainingDays===1?'':'s') + ' of this month.';
+    }
+
+    const byGroup = {};
+    monthExpenses.forEach(e => { const key = e.group || 'Other'; byGroup[key] = (byGroup[key] || 0) + numeric(e.amount); });
+    const limits = Object.entries(groupBudgets || {}).filter(([,limit]) => numeric(limit) > 0).sort((a,b)=>a[0].localeCompare(b[0]));
+    $('groupBudgets').innerHTML = limits.length ? '<div style="margin-top:16px;font-weight:700;font-size:.9rem">Category limits</div>' + limits.map(([group,limit]) => {
+      const used = byGroup[group] || 0; const p = used / numeric(limit) * 100;
+      return '<div class="gb-row"><div class="gb-head"><span>' + esc(group) + '</span><span>' + safeMoney(used) + ' / ' + safeMoney(limit) + ' · <strong>' + (used >= numeric(limit) ? '100% used' : safeMoney(numeric(limit)-used) + ' left') + '</strong></span></div><div class="progress-track progress-sm"><div class="progress-fill ' + barClass(p) + '" style="width:' + Math.min(Math.max(p,0),100) + '%"></div></div></div>';
+    }).join('') : '<div class="empty-inline">No category limits yet. <a href="budgets.html" class="text-primary">Set category budgets →</a></div>';
+  }
+
+  function renderAlerts(reminders) {
+    const box = $('alertBanner');
+    if (!reminders || typeof reminders !== 'object') { box.hidden=true; return; }
+    const overdue = Array.isArray(reminders.overdue_fees) ? reminders.overdue_fees : [];
+    const due = Array.isArray(reminders.fees_due_7_days) ? reminders.fees_due_7_days : [];
+    const scholarships = Array.isArray(reminders.upcoming_scholarship_deadlines) ? reminders.upcoming_scholarship_deadlines : [];
+    const goals = Array.isArray(reminders.upcoming_goal_deadlines) ? reminders.upcoming_goal_deadlines : [];
+    const lines = [];
+    overdue.forEach(f=>lines.push('<li><strong class="text-danger">Overdue fee:</strong> '+esc(f.fee_title||f.title)+' — '+safeMoney(f.remaining)+' (due '+niceDate(f.due_date)+')</li>'));
+    due.forEach(f=>lines.push('<li><strong>Fee due soon:</strong> '+esc(f.fee_title||f.title)+' — '+safeMoney(f.remaining)+' on '+niceDate(f.due_date)+'</li>'));
+    scholarships.forEach(s=>lines.push('<li><strong>Scholarship deadline:</strong> '+esc(s.scholarship_name||s.name)+' — '+niceDate(s.application_deadline||s.deadline)+'</li>'));
+    goals.forEach(g=>lines.push('<li><strong>Goal deadline:</strong> '+esc(g.goal_title||g.title)+' — '+safeMoney(g.current_saved_amount)+' of '+safeMoney(g.target_amount)+' by '+niceDate(g.target_date)+'</li>'));
+    if (!lines.length) { box.hidden=true; return; }
+    box.className='dash-alert '+(overdue.length?'danger':'warning');
+    box.innerHTML='<strong>🔔 '+lines.length+' item'+(lines.length===1?'':'s')+' need your attention</strong><ul>'+lines.join('')+'</ul><a href="reminders.html" class="btn btn-sm btn-secondary mt-8">Open reminders →</a>';
+    box.hidden=false;
+  }
+
+  function renderGlance(ctx) {
+    const d=ctx.data, fees=d.fees, goals=d.goals, scholarships=d.scholarships, reminders=d.reminders;
+    const pendingFees=fees.filter(f=>numeric(f.remaining)>0);
+    const pendingTotal=amountSum(pendingFees,'remaining');
+    const totalFees=amountSum(fees,'total_amount'), paidFees=amountSum(fees,'paid');
+    const feePct=totalFees>0?paidFees/totalFees*100:0;
+    const activeGoals=goals.filter(g=>String(g.status).toLowerCase()==='active');
+    const saved=amountSum(activeGoals,'current_saved_amount'), target=amountSum(activeGoals,'target_amount');
+    const goalPct=target>0?saved/target*100:0;
+    const awarded=amountSum(scholarships,'awarded_amount'), received=amountSum(scholarships,'total_received');
+    const scholarshipPct=awarded>0?received/awarded*100:0;
+    const sem=d.dashboard.active_semester??d.dashboard.semester??null;
+    const alertCount=reminders && typeof reminders==='object' ? Number(reminders.total_alerts ?? (reminders.overdue_fees?.length||0)+(reminders.fees_due_7_days?.length||0)+(reminders.upcoming_scholarship_deadlines?.length||0)+(reminders.upcoming_goal_deadlines?.length||0)) : 0;
+    const topGroup=(()=>{const totals={};ctx.monthExpenses.forEach(e=>totals[e.group]=(totals[e.group]||0)+numeric(e.amount));const top=Object.entries(totals).sort((a,b)=>b[1]-a[1])[0];return top?top[0]+' ('+safeMoney(top[1])+')':'No spending yet';})();
+    const latestIncome=[...d.income].sort((a,b)=>b.date.localeCompare(a.date))[0];
+    const tile=(href,icon,label,value,sub,pct)=>'<a class="card glance-tile" href="'+href+'"><div class="glance-top"><span>'+label+'</span><span>'+icon+'</span></div><div class="glance-val">'+value+'</div><div class="glance-sub">'+sub+'</div>'+(pct===undefined?'':'<div class="progress-track progress-sm"><div class="progress-fill '+barClass(pct)+'" style="width:'+Math.min(Math.max(pct,0),100)+'%"></div></div>')+'</a>';
+    $('glanceGrid').innerHTML=[
+      tile('expenses.html','💸','Expenses · this month',safeMoney(ctx.spent),ctx.monthExpenses.length+' transactions · top: '+esc(topGroup)),
+      tile('income.html','💵','Income · this month',safeMoney(ctx.monthIncome),latestIncome?'Latest: '+esc(latestIncome.source)+' '+safeMoney(latestIncome.amount):'No income added yet'),
+      tile('semesters.html','📅','Active semester',sem?esc(sem.semester_name||sem.name||'Active'):'None active',sem?safeMoney(sem.total_expenses)+' spent of '+safeMoney(sem.budget)+' budget':'Add an academic semester',sem&&numeric(sem.budget)>0?numeric(sem.total_expenses)/numeric(sem.budget)*100:undefined),
+      tile('college-fees.html','🏫','College fees',safeMoney(pendingTotal)+' pending',safeMoney(paidFees)+' paid of '+safeMoney(totalFees),totalFees>0?feePct:undefined),
+      tile('savings-goals.html','🏦','Savings goals',safeMoney(saved)+' saved',activeGoals.length+' active goal'+(activeGoals.length===1?'':'s')+' · target '+safeMoney(target),target>0?goalPct:undefined),
+      tile('scholarships.html','🎓','Scholarships',safeMoney(received)+' received',scholarships.length+' records · '+safeMoney(awarded)+' awarded',awarded>0?scholarshipPct:undefined),
+      tile('reminders.html','🔔','Reminders',alertCount+' alert'+(alertCount===1?'':'s'),alertCount?'Upcoming or overdue items':'Nothing urgent right now')
+    ].join('');
+  }
+
+  function renderSemester(semester) {
+    const el=$('semesterContent');
+    if (!semester) {el.innerHTML='<div class="empty-inline">No active semester. <a href="semesters.html" class="text-primary">Add a semester →</a></div>';return;}
+    const budget=numeric(semester.budget??semester.semester_budget), spent=numeric(semester.total_expenses??semester.spent), pct=budget>0?spent/budget*100:0;
+    el.innerHTML='<div class="d-flex align-center gap-8 mb-8" style="flex-wrap:wrap"><span class="badge badge-success">Active</span><strong>'+esc(semester.semester_name||semester.name||'Active semester')+'</strong><span class="text-muted" style="font-size:.8rem">'+esc(semester.academic_year||'')+'</span></div><div class="text-muted mb-8" style="font-size:.8rem">'+niceDate(semester.start_date)+' → '+niceDate(semester.end_date)+'</div><div class="d-flex" style="justify-content:space-between;gap:8px;margin-bottom:6px;font-size:.84rem"><span>Spent: <strong>'+safeMoney(spent)+'</strong></span><span>Budget: <strong>'+safeMoney(budget)+'</strong></span></div><div class="progress-track"><div class="progress-fill '+barClass(pct)+'" style="width:'+Math.min(Math.max(pct,0),100)+'%"></div></div><div class="data-label" style="margin-top:7px">'+pct.toFixed(1)+'% used · '+safeMoney(budget-spent)+' remaining</div>';
+  }
+
+  function renderFees(fees) {
+    const el=$('upcomingFees');
+    const pending=fees.filter(f=>numeric(f.remaining)>0).sort((a,b)=>(a.due_date||'9999-12-31').localeCompare(b.due_date||'9999-12-31')).slice(0,5);
+    if(!pending.length){el.innerHTML='<div class="empty-inline">Nothing pending 🎉 <a href="college-fees.html">View fee records →</a></div>';return;}
+    el.innerHTML=pending.map(f=>{const days=daysUntil(f.due_date),color=days<0?'#ef4444':days<=7?'#f59e0b':'#22c55e',due=days<0?'Overdue by '+Math.abs(days)+' day'+(Math.abs(days)===1?'':'s'):days===0?'Due today':'Due in '+days+' day'+(days===1?'':'s');return '<div class="fee-row"><span class="fee-dot" style="background:'+color+'"></span><div style="flex:1;min-width:0"><div class="fw-semi" style="font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.fee_title)+'</div><div class="data-label">'+due+' · '+(f.due_date?niceDate(f.due_date):'Date not set')+'</div></div><div style="text-align:right;flex-shrink:0"><div class="fw-bold negative-text">'+safeMoney(f.remaining)+'</div><div class="data-label">remaining</div></div></div>';}).join('');
+  }
+
+  function renderGoals(goals) {
+    const el=$('goalGrid'), active=goals.filter(g=>String(g.status).toLowerCase()==='active').slice(0,4);
+    if(!active.length){el.innerHTML='<div class="empty-inline" style="grid-column:1/-1">No active goals. <a href="savings-goals.html">Create one →</a></div>';return;}
+    el.innerHTML=active.map(g=>{const pct=g.target_amount>0?g.current_saved_amount/g.target_amount*100:numeric(g.progress_pct);return '<div class="goal-mini-card"><div class="fw-semi mb-8" style="font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(g.goal_title)+'</div><div class="progress-track progress-sm" style="margin-bottom:7px"><div class="progress-fill '+(pct>=100?'success':pct>=60?'info':'warning')+'" style="width:'+Math.min(Math.max(pct,0),100)+'%"></div></div><div class="d-flex" style="justify-content:space-between;gap:5px;font-size:.75rem"><span class="text-muted">'+safeMoney(g.current_saved_amount)+'</span><strong>'+pct.toFixed(0)+'%</strong><span class="text-muted">'+safeMoney(g.target_amount)+'</span></div></div>';}).join('');
+  }
+
+  function renderRecentExpenses(list) {
+    const el=$('recentExpenses');
+    if(!list.length){el.innerHTML='<div class="empty-state" style="padding:28px"><div class="empty-icon">💸</div><h3>No expenses yet</h3><p>Start tracking your spending.</p><a href="expenses.html" class="btn btn-sm btn-secondary">Add expense</a></div>';return;}
+    el.innerHTML='<div class="list-items">'+list.map(e=>'<div class="list-item"><div class="list-item-icon">'+esc(e.icon)+'</div><div class="list-item-body"><div class="list-item-title">'+esc(e.title)+'</div><div class="list-item-sub">'+esc(e.category)+' · '+niceDate(e.date)+'</div></div><div class="list-item-right"><span class="list-item-amount expense">'+safeMoney(e.amount)+'</span></div></div>').join('')+'</div>';
+  }
+  function renderRecentIncome(list) {
+    const el=$('recentIncome');
+    if(!list.length){el.innerHTML='<div class="empty-state" style="padding:28px"><div class="empty-icon">💵</div><h3>No income yet</h3><p>Add pocket money or other income.</p><a href="income.html" class="btn btn-sm btn-secondary">Add income</a></div>';return;}
+    el.innerHTML='<div class="list-items">'+list.map(i=>'<div class="list-item"><div class="list-item-icon">💵</div><div class="list-item-body"><div class="list-item-title">'+esc(i.source)+'</div><div class="list-item-sub">'+niceDate(i.date)+'</div></div><div class="list-item-right"><span class="list-item-amount income">+'+safeMoney(i.amount)+'</span></div></div>').join('')+'</div>';
+  }
+
+  function renderCharts() {
+    if(!dashboardData || typeof Chart==='undefined') return;
+    const expenses=dashboardData.expenses, income=dashboardData.income, month=currentMonthKey();
+    const text=getComputedStyle(document.documentElement).getPropertyValue('--muted').trim()||'#64748b';
+    const grid=getComputedStyle(document.documentElement).getPropertyValue('--border').trim()||'#e5e7eb';
+    const surface=getComputedStyle(document.documentElement).getPropertyValue('--surface').trim()||'#ffffff';
+    const totals={};
+    monthRecords(expenses,month).forEach(e=>{const key=e.group||'Other';totals[key]=(totals[key]||0)+numeric(e.amount);});
+    const labels=Object.keys(totals);
+    $('groupChartEmpty').hidden=labels.length>0; $('groupChartWrap').hidden=labels.length===0;
+    if(charts.group){charts.group.destroy();charts.group=null;}
+    if(labels.length){charts.group=new Chart($('groupChart').getContext('2d'),{type:'doughnut',data:{labels,datasets:[{data:labels.map(k=>totals[k]),backgroundColor:chartColors.slice(0,labels.length),borderWidth:2,borderColor:surface}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{padding:10,font:{size:11},color:text}}}}});}
+
+    const months=[];const now=new Date();
+    for(let i=5;i>=0;i--){const dt=new Date(now.getFullYear(),now.getMonth()-i,1);months.push({key:dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0'),label:dt.toLocaleDateString('en-IN',{month:'short',year:'2-digit'})});}
+    const byMonth=list=>months.map(m=>amountSum(list.filter(r=>r.date&&r.date.slice(0,7)===m.key),'amount'));
+    const out=byMonth(expenses),inc=byMonth(income),hasData=out.some(v=>v>0)||inc.some(v=>v>0);
+    $('trendChartEmpty').hidden=hasData;$('trendChartWrap').hidden=!hasData;
+    if(charts.trend){charts.trend.destroy();charts.trend=null;}
+    if(hasData){charts.trend=new Chart($('trendChart').getContext('2d'),{type:'bar',data:{labels:months.map(m=>m.label),datasets:[{label:'Income',data:inc,backgroundColor:'#22c55e',borderRadius:4},{label:'Expenses',data:out,backgroundColor:'#6366f1',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:text,font:{size:11}}}},scales:{x:{ticks:{color:text},grid:{display:false}},y:{beginAtZero:true,ticks:{color:text,callback:v=>'₹'+Number(v).toLocaleString('en-IN')},grid:{color:grid}}}}});}
+  }
+
+  async function submitQuickExpense(event) {
+    event.preventDefault();
+    const button=$('qaBtn'),errorBox=$('qaError');errorBox.hidden=true;
+    const title=$('qaTitle').value.trim(),amount=Number($('qaAmount').value),category_id=Number($('qaCategory').value),date=$('qaDate').value;
+    if(!title||!Number.isFinite(amount)||amount<=0||!Number.isInteger(category_id)||category_id<=0||!date){errorBox.textContent='Please enter a title, a valid amount, category and date.';errorBox.hidden=false;return;}
+    button.disabled=true;button.textContent='Adding…';
+    try {
+      await API_CLIENT.post('/expenses',{title,amount,category_id,date});
+      if(typeof showToast==='function')showToast('Expense added successfully!','success');
+      $('quickAddForm').reset();$('qaDate').value=localTodayISO();
+      await loadAll();
+    } catch(error) {
+      console.error('Quick add expense failed:',error);
+      errorBox.textContent=error?.message||'Unable to add expense. Please try the Expenses page.';errorBox.hidden=false;
+    } finally {button.disabled=false;button.textContent='Add';}
+  }
+
+  async function start() {
+    try {
+      const user=await requireAuth();
+      if(user && user.name) $('userName').textContent=String(user.name).trim().split(/\s+/)[0];
+      if(typeof buildNav==='function') buildNav('dashboard',user);
+      setDateLabels();
+      $('quickAddForm').addEventListener('submit',submitQuickExpense);
+      await Promise.all([loadCategories(),loadAll()]);
+    } catch(error) {
+      console.error('Dashboard startup failed:',error);
+      const warning=$('dashboardLoadWarning');warning.textContent=error?.message||'Dashboard could not start. Please sign in again.';warning.hidden=false;
+      $('glanceGrid').innerHTML='<div class="empty-inline">Dashboard data could not be loaded. Please refresh or sign in again.</div>';
+    }
+  }
+
+  // Redraw chart text/legend colours after the existing theme toggle changes data-theme.
+  if(typeof MutationObserver!=='undefined') new MutationObserver(()=>renderCharts()).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+  start();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+/* Phase 5 common styling */
+
+.p5-grid,
+.p5-reminder-grid {
+    gap: 24px;
+}
+
+.p5-grid .card,
+.p5-reminder-grid .card {
+    border-radius: 16px;
+    padding: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+}
+
+.p5-item,
+.p5-card {
+    border-radius: 12px;
+    padding: 16px;
+    transition: 0.2s ease;
+}
+
+.p5-item:hover,
+.p5-card:hover {
+    transform: translateY(-2px);
+}
+
+.p5-field input:focus,
+.p5-field select:focus,
+.p5-field textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.p5-empty {
+    padding: 30px;
+    border-radius: 14px;
+}
+
+@media (max-width: 768px) {
+    .p5-grid,
+    .p5-reminder-grid {
+        grid-template-columns: 1fr;
+    }
+}

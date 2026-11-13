@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finlumiq — Smart Student Expense Tracker</title>
+<meta http-equiv="refresh" content="0;url=login.html">
+<style>
+  body{font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f1f5f9;color:#334155;}
+  .msg{text-align:center;padding:40px;}
+  .spinner{width:36px;height:36px;border:3px solid #e2e8f0;border-top-color:#6366f1;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+<div class="msg">
+  <div class="spinner"></div>
+  <p>Redirecting to Finlumiq…</p>
+</div>
+<script>
+  // Check if already logged in; if so go to dashboard, else login page
+  fetch('http://127.0.0.1:5000/api/auth/me', {credentials:'include'})
+    .then(r => { location.replace(r.ok ? 'dashboard.html' : 'login.html'); })
+    .catch(() => { location.replace('login.html'); });
+</script>
+</body>
+</html>
