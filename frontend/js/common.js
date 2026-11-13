@@ -1,6 +1,6 @@
 // common.js — Shared utilities for all application pages
 
-const API = "https:// https://finlumiq-2.onrender.com/api";
+const API = " https://finlumiq-2.onrender.com/api";
 
 // ---------------------------------------------------------------
 // API Helper
