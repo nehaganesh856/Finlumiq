@@ -1,28 +1,22 @@
 
-// nav.js — Right-side navigation drawer for all Finlumiq pages.
+// nav.js — Right-side navigation drawer for Finlumiq.
 
 const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", icon: "📊", href: "dashboard.html" },
-  { id: "expenses", label: "Expenses", icon: "💸", href: "expenses.html" },
-  { id: "income", label: "Income", icon: "💰", href: "income.html" },
-  { id: "budgets", label: "Budgets", icon: "🎯", href: "budgets.html" },
-  { id: "semesters", label: "Semesters", icon: "📅", href: "semesters.html" },
-  { id: "college-fees", label: "College Fees", icon: "🏫", href: "college-fees.html" },
-  { id: "savings-goals", label: "Savings Goals", icon: "🏦", href: "savings-goals.html" },
-  { id: "scholarships", label: "Scholarships", icon: "🎓", href: "scholarships.html" },
-
-  // Phase 5
-  { id: "split-expenses", label: "Split Expenses", icon: "🤝", href: "split-expenses.html" },
-  { id: "reports", label: "Reports", icon: "📈", href: "reports.html" },
-  { id: "reminders", label: "Financial Alerts", icon: "🔔", href: "reminders.html", badge: true },
-  { id: "phase5-reminders", label: "My Reminders", icon: "🗓️", href: "phase5-reminders.html" },
-
-  // Phase 6 — AI Financial Assistant (Available)
-  { id: "ai-assistant", label: "AI Financial Assistant", icon: "🤖", href: "ai-assistant.html" },
-
-  // Other pages
-  { id: "profile-settings", label: "Profile & Settings", icon: "⚙️", href: "profile-settings.html" },
-  { id: "receipt-scanner", label: "Receipt Scanner", icon: "📷", href: "receipt-scanner.html" }
+  { id: "dashboard", label: "Dashboard", icon: "📊", href: "/pages/dashboard.html" },
+  { id: "expenses", label: "Expenses", icon: "💸", href: "/pages/expenses.html" },
+  { id: "income", label: "Income", icon: "💰", href: "/pages/income.html" },
+  { id: "budgets", label: "Budgets", icon: "🎯", href: "/pages/budgets.html" },
+  { id: "semesters", label: "Semesters", icon: "📅", href: "/pages/semesters.html" },
+  { id: "college-fees", label: "College Fees", icon: "🏫", href: "/pages/college-fees.html" },
+  { id: "savings-goals", label: "Savings Goals", icon: "🏦", href: "/pages/savings-goals.html" },
+  { id: "scholarships", label: "Scholarships", icon: "🎓", href: "/pages/scholarships.html" },
+  { id: "split-expenses", label: "Split Expenses", icon: "🤝", href: "/pages/split-expenses.html" },
+  { id: "reports", label: "Reports", icon: "📈", href: "/pages/reports.html" },
+  { id: "reminders", label: "Financial Alerts", icon: "🔔", href: "/pages/reminders.html", badge: true },
+  { id: "phase5-reminders", label: "My Reminders", icon: "🗓️", href: "/pages/phase5-reminders.html" },
+  { id: "ai-assistant", label: "AI Financial Assistant", icon: "🤖", href: "/pages/ai-assistant.html" },
+  { id: "profile-settings", label: "Profile & Settings", icon: "⚙️", href: "/pages/profile-settings.html" },
+  { id: "receipt-scanner", label: "Receipt Scanner", icon: "📷", href: "/pages/receipt-scanner.html" }
 ];
 
 function buildNav(currentPageId, user) {
@@ -32,6 +26,7 @@ function buildNav(currentPageId, user) {
 
   const itemsHtml = NAV_ITEMS.map(item => {
     const isActive = item.id === currentPageId;
+
     const badgeHtml = item.badge
       ? `<span class="nav-badge reminder-badge" hidden>0</span>`
       : "";
@@ -126,7 +121,7 @@ function buildNav(currentPageId, user) {
         console.error("Logout error:", error);
       }
 
-      location.replace("login.html");
+      location.replace("/login.html");
     });
 
   loadReminderBadge();
