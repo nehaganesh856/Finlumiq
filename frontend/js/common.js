@@ -1,8 +1,6 @@
 // common.js — Shared utilities for all application pages
 
-const API = window.location.protocol === "https:"
-  ? "/api"
-  : "http://127.0.0.1:5000/api";
+const API = "https:// https://finlumiq-2.onrender.com/api";
 
 // ---------------------------------------------------------------
 // API Helper
