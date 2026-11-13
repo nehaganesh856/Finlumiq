@@ -821,50 +821,445 @@ def category_json(row):
     }
 
 
-@app.route("/api/categories", methods=["GET"])
+
+# ============================================================
+# RECEIPT SCANNER API ROUTES
+# Uses the existing receipt_scans table.
+# ============================================================
+
+@app.route("/api/receipt-scans", methods=["GET"])
 @login_required
-def get_categories():
+def get_receipt_scans():
     uid = session["user_id"]
     db = get_db()
+
     try:
         cur = db.cursor(dictionary=True)
+
         cur.execute(
-            "SELECT id, user_id, name, grp, icon FROM categories "
-            "WHERE user_id IS NULL OR user_id = %s ORDER BY grp, name", (uid,))
-        return jsonify([category_json(r) for r in cur.fetchall()])
+            """
+            SELECT
+                rs.id,
+                rs.expense_id,
+                rs.merchant_name,
+                rs.expense_title,
+                rs.amount,
+                rs.category_id,
+                c.name AS category_name,
+                c.grp AS category_group,
+                DATE_FORMAT(rs.expense_date, '%Y-%m-%d') AS expense_date,
+                rs.status,
+                rs.created_at
+            FROM receipt_scans rs
+            LEFT JOIN categories c ON c.id = rs.category_id
+            WHERE rs.user_id = %s
+            ORDER BY rs.created_at DESC, rs.id DESC
+            LIMIT 25
+            """,
+            (uid,)
+        )
+
+        rows = cur.fetchall()
+
+        for row in rows:
+            row["amount"] = float(row["amount"] or 0)
+
+        return jsonify(rows)
+
     finally:
         db.close()
 
 
-@app.route("/api/categories", methods=["POST"])
+@app.route("/api/receipt-scans", methods=["POST"])
 @login_required
-def add_category():
+def save_receipt_scan():
     uid = session["user_id"]
     data = request.get_json(silent=True) or {}
-    name = str(data.get("name", "")).strip()
-    group = str(data.get("group", "")).strip()
-    icon = str(data.get("icon", "")).strip() or "🏷️"
 
-    if not name or len(name) > 40:
-        return jsonify({"error": "Category name is required (max 40 characters)"}), 400
-    if group not in GROUPS:
-        return jsonify({"error": "Please choose a valid group"}), 400
-    if len(icon) > 8:
-        return jsonify({"error": "Icon must be a single emoji or short symbol"}), 400
+    merchant = str(data.get("merchant_name") or "").strip()
+    title = str(data.get("expense_title") or "").strip()
+    image_hash = str(data.get("image_hash") or "").strip().lower()
+    extracted_text = str(data.get("extracted_text") or "")
+    notes = str(data.get("notes") or "")
+    expense_date = str(data.get("expense_date") or "").strip()
+
+    try:
+        amount = float(data.get("amount"))
+        category_id = int(data.get("category_id"))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Enter a valid amount and category."}), 400
+
+    if not title or len(title) > 150:
+        return jsonify({"error": "Expense title is required (maximum 150 characters)."}), 400
+
+    if amount <= 0 or amount != amount or amount == float("inf"):
+        return jsonify({"error": "Enter a valid amount greater than zero."}), 400
+
+    if category_id <= 0:
+        return jsonify({"error": "Select a valid category."}), 400
+
+    if not (
+        len(expense_date) == 10
+        and expense_date[4] == "-"
+        and expense_date[7] == "-"
+        and expense_date[:4].isdigit()
+        and expense_date[5:7].isdigit()
+        and expense_date[8:10].isdigit()
+    ):
+        return jsonify({"error": "Enter a valid expense date."}), 400
+
+    if len(merchant) > 150 or len(notes) > 500 or len(extracted_text) > 20000:
+        return jsonify({"error": "Receipt information exceeds the allowed length."}), 400
+
+    if len(image_hash) != 64 or not all(
+        char in "0123456789abcdef" for char in image_hash
+    ):
+        return jsonify({"error": "A valid SHA-256 receipt image hash is required."}), 400
+
+    expense_id = data.get("expense_id")
+
+    if expense_id is not None:
+        try:
+            expense_id = int(expense_id)
+            if expense_id <= 0:
+                raise ValueError()
+        except (TypeError, ValueError):
+            return jsonify({"error": "Invalid expense ID."}), 400
 
     db = get_db()
+
     try:
         cur = db.cursor(dictionary=True)
+
+        if not category_allowed(cur, category_id, uid):
+            return jsonify({"error": "Invalid category."}), 400
+
+        if expense_id is not None:
+            cur.execute(
+                "SELECT id FROM expenses WHERE id=%s AND user_id=%s",
+                (expense_id, uid)
+            )
+
+            if not cur.fetchone():
+                return jsonify({"error": "The linked expense was not found."}), 400
+
         cur.execute(
-            "SELECT id FROM categories WHERE LOWER(name)=LOWER(%s) AND (user_id IS NULL OR user_id=%s)",
-            (name, uid))
+            """
+            SELECT id
+            FROM receipt_scans
+            WHERE user_id=%s AND image_sha256=%s
+            LIMIT 1
+            """,
+            (uid, image_hash)
+        )
+
         if cur.fetchone():
-            return jsonify({"error": "A category with this name already exists"}), 409
-        cur.execute("INSERT INTO categories (user_id, name, grp, icon) VALUES (%s,%s,%s,%s)",
-                    (uid, name, group, icon))
+            return jsonify({
+                "error": "This receipt image has already been saved.",
+                "duplicate": True
+            }), 409
+
+        cur.execute(
+            """
+            INSERT INTO receipt_scans (
+                user_id, expense_id, merchant_name, expense_title,
+                amount, category_id, expense_date, image_sha256,
+                extracted_text, notes, status
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                uid, expense_id, merchant or None, title,
+                amount, category_id, expense_date, image_hash,
+                extracted_text or None, notes or None, "saved"
+            )
+        )
+
+        scan_id = cur.lastrowid
         db.commit()
-        cur.execute("SELECT id, user_id, name, grp, icon FROM categories WHERE id = %s", (cur.lastrowid,))
-        return jsonify(category_json(cur.fetchone())), 201
+
+        return jsonify({
+            "id": scan_id,
+            "message": "Receipt history saved successfully."
+        }), 201
+
+    finally:
+        db.close()
+
+
+@app.route("/api/receipt-scans/check-duplicate", methods=["POST"])
+@login_required
+def check_receipt_scan_duplicate():
+    uid = session["user_id"]
+    data = request.get_json(silent=True) or {}
+
+    image_hash = str(data.get("image_hash") or "").strip().lower()
+
+    try:
+        amount = float(data.get("amount"))
+        category_id = int(data.get("category_id"))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid receipt details."}), 400
+
+    title = str(data.get("title") or "").strip()
+    expense_date = str(data.get("date") or "").strip()
+
+    if len(image_hash) != 64 or not all(
+        char in "0123456789abcdef" for char in image_hash
+    ):
+        return jsonify({"error": "Invalid receipt image hash."}), 400
+
+    if amount <= 0 or amount != amount or amount == float("inf"):
+        return jsonify({"error": "Invalid receipt amount."}), 400
+
+    if category_id <= 0 or not title or len(title) > 150:
+        return jsonify({"error": "Invalid receipt title or category."}), 400
+
+    if not (
+        len(expense_date) == 10
+        and expense_date[4] == "-"
+        and expense_date[7] == "-"
+        and expense_date[:4].isdigit()
+        and expense_date[5:7].isdigit()
+        and expense_date[8:10].isdigit()
+    ):
+        return jsonify({"error": "Invalid receipt date."}), 400
+
+    db = get_db()
+
+    try:
+        cur = db.cursor(dictionary=True)
+
+        cur.execute(
+            """
+            SELECT
+                id,
+                expense_title AS title,
+                amount,
+                DATE_FORMAT(expense_date, '%Y-%m-%d') AS expense_date
+            FROM receipt_scans
+            WHERE user_id=%s AND image_sha256=%s
+            LIMIT 1
+            """,
+            (uid, image_hash)
+        )
+
+        exact_match = cur.fetchone()
+
+        if exact_match:
+            exact_match["amount"] = float(exact_match["amount"] or 0)
+
+            return jsonify({
+                "duplicate": True,
+                "possible_duplicate": False,
+                "match": exact_match
+            })
+
+        cur.execute(
+            """
+            SELECT
+                id,
+                expense_title AS title,
+                amount,
+                DATE_FORMAT(expense_date, '%Y-%m-%d') AS expense_date
+            FROM receipt_scans
+            WHERE user_id=%s
+              AND expense_date=%s
+              AND amount=%s
+              AND category_id=%s
+              AND LOWER(expense_title)=LOWER(%s)
+            ORDER BY id DESC
+            LIMIT 1
+            """,
+            (uid, expense_date, amount, category_id, title)
+        )
+
+        similar_match = cur.fetchone()
+
+        if similar_match:
+            similar_match["amount"] = float(similar_match["amount"] or 0)
+
+            return jsonify({
+                "duplicate": False,
+                "possible_duplicate": True,
+                "match": similar_match
+            })
+
+        return jsonify({
+            "duplicate": False,
+            "possible_duplicate": False,
+            "match": None
+        })
+
+    finally:
+        db.close()
+
+
+@app.route("/api/receipt-scans/insights", methods=["GET"])
+@login_required
+def get_receipt_scan_insights():
+    uid = session["user_id"]
+    month = str(request.args.get("month") or "").strip()
+
+    db = get_db()
+
+    try:
+        cur = db.cursor(dictionary=True)
+
+        if not month:
+            cur.execute(
+                "SELECT DATE_FORMAT(CURDATE(), '%Y-%m') AS month"
+            )
+            month = cur.fetchone()["month"]
+
+        if not (
+            len(month) == 7
+            and month[4] == "-"
+            and month[:4].isdigit()
+            and month[5:7].isdigit()
+            and 1 <= int(month[5:7]) <= 12
+        ):
+            return jsonify({"error": "Month must use YYYY-MM format."}), 400
+
+        year = int(month[:4])
+        month_number = int(month[5:7])
+
+        if month_number == 1:
+            previous_month = f"{year - 1:04d}-12"
+        else:
+            previous_month = f"{year:04d}-{month_number - 1:02d}"
+
+        # Current month statistics
+        cur.execute(
+            """
+            SELECT
+                COUNT(*) AS scan_count,
+                COALESCE(SUM(amount), 0) AS total_amount,
+                COALESCE(AVG(amount), 0) AS average_amount
+            FROM receipt_scans
+            WHERE user_id=%s
+              AND DATE_FORMAT(expense_date, '%Y-%m')=%s
+            """,
+            (uid, month)
+        )
+
+        current = cur.fetchone()
+
+        # Previous month total for comparison
+        cur.execute(
+            """
+            SELECT COALESCE(SUM(amount), 0) AS total_amount
+            FROM receipt_scans
+            WHERE user_id=%s
+              AND DATE_FORMAT(expense_date, '%Y-%m')=%s
+            """,
+            (uid, previous_month)
+        )
+
+        previous = cur.fetchone()
+
+        current_total = float(current["total_amount"] or 0)
+        previous_total = float(previous["total_amount"] or 0)
+
+        percentage_change = None
+
+        if previous_total > 0:
+            percentage_change = (
+                (current_total - previous_total) / previous_total
+            ) * 100
+
+        direction = (
+            "up" if percentage_change is not None and percentage_change > 0
+            else "down" if percentage_change is not None and percentage_change < 0
+            else "same"
+        )
+
+        comparison = {
+            "percentage_change": (
+                round(percentage_change, 2)
+                if percentage_change is not None else None
+            ),
+            "direction": direction
+        }
+
+        # Top receipt categories
+        cur.execute(
+            """
+            SELECT
+                COALESCE(NULLIF(c.grp, ''), 'Other') AS category_group,
+                COALESCE(SUM(rs.amount), 0) AS total_amount,
+                COUNT(*) AS scan_count
+            FROM receipt_scans rs
+            LEFT JOIN categories c ON c.id=rs.category_id
+            WHERE rs.user_id=%s
+              AND DATE_FORMAT(rs.expense_date, '%Y-%m')=%s
+            GROUP BY COALESCE(NULLIF(c.grp, ''), 'Other')
+            ORDER BY total_amount DESC
+            LIMIT 5
+            """,
+            (uid, month)
+        )
+
+        categories_result = cur.fetchall()
+
+        for item in categories_result:
+            item["total_amount"] = float(item["total_amount"] or 0)
+
+        # Frequent merchants
+        cur.execute(
+            """
+            SELECT
+                COALESCE(NULLIF(TRIM(merchant_name), ''), 'Unknown') AS merchant_name,
+                COUNT(*) AS scan_count
+            FROM receipt_scans
+            WHERE user_id=%s
+              AND DATE_FORMAT(expense_date, '%Y-%m')=%s
+            GROUP BY COALESCE(NULLIF(TRIM(merchant_name), ''), 'Unknown')
+            ORDER BY scan_count DESC
+            LIMIT 5
+            """,
+            (uid, month)
+        )
+
+        merchants_result = cur.fetchall()
+
+        # Simple rule-based insights
+        insights = []
+
+        if int(current["scan_count"] or 0) == 0:
+            insights.append("No receipt scans have been saved for this month yet.")
+        else:
+            insights.append(
+                f"You saved {int(current['scan_count'])} receipt(s) this month."
+            )
+            insights.append(
+                f"Your total scanned receipt amount is ₹{current_total:,.2f}."
+            )
+
+            if categories_result:
+                top_category = categories_result[0]
+                insights.append(
+                    f"Your highest receipt spending group is {top_category['category_group']}."
+                )
+
+            if merchants_result:
+                insights.append(
+                    f"Your most frequent merchant is {merchants_result[0]['merchant_name']}."
+                )
+
+        return jsonify({
+            "month": month,
+            "summary": {
+                "scan_count": int(current["scan_count"] or 0),
+                "total_amount": current_total,
+                "average_amount": float(current["average_amount"] or 0)
+            },
+            "comparison": comparison,
+            "categories": categories_result,
+            "merchants": merchants_result,
+            "insights": insights
+        })
+
     finally:
         db.close()
 

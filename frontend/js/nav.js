@@ -2,7 +2,7 @@
 // nav.js — Right-side navigation drawer for Finlumiq.
 
 const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", icon: "📊", href: "/pages/dashboard.html" },
+  { id: "dashboard", label: "Dashboard", icon: "📊", href: "/dashboard.html" },
   { id: "expenses", label: "Expenses", icon: "💸", href: "/pages/expenses.html" },
   { id: "income", label: "Income", icon: "💰", href: "/pages/income.html" },
   { id: "budgets", label: "Budgets", icon: "🎯", href: "/pages/budgets.html" },
