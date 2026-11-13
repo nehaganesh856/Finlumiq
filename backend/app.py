@@ -1263,6 +1263,91 @@ def get_receipt_scan_insights():
     finally:
         db.close()
 
+# ============================================================
+# CATEGORY ROUTES
+# ============================================================
+
+@app.route("/api/categories", methods=["GET"])
+@login_required
+def get_categories():
+    uid = session["user_id"]
+    db = get_db()
+
+    try:
+        cur = db.cursor(dictionary=True)
+
+        cur.execute(
+            "SELECT id, user_id, name, grp, icon FROM categories "
+            "WHERE user_id IS NULL OR user_id = %s "
+            "ORDER BY grp, name",
+            (uid,)
+        )
+
+        return jsonify([category_json(row) for row in cur.fetchall()])
+
+    finally:
+        db.close()
+
+
+@app.route("/api/categories", methods=["POST"])
+@login_required
+def add_category():
+    uid = session["user_id"]
+    data = request.get_json(silent=True) or {}
+
+    name = str(data.get("name", "")).strip()
+    group = str(data.get("group", "")).strip()
+    icon = str(data.get("icon", "")).strip() or "🏷️"
+
+    if not name or len(name) > 40:
+        return jsonify({
+            "error": "Category name is required (max 40 characters)"
+        }), 400
+
+    if group not in GROUPS:
+        return jsonify({"error": "Please choose a valid group"}), 400
+
+    if len(icon) > 8:
+        return jsonify({
+            "error": "Icon must be a single emoji or short symbol"
+        }), 400
+
+    db = get_db()
+
+    try:
+        cur = db.cursor(dictionary=True)
+
+        cur.execute(
+            "SELECT id FROM categories "
+            "WHERE LOWER(name)=LOWER(%s) "
+            "AND (user_id IS NULL OR user_id=%s)",
+            (name, uid)
+        )
+
+        if cur.fetchone():
+            return jsonify({
+                "error": "A category with this name already exists"
+            }), 409
+
+        cur.execute(
+            "INSERT INTO categories (user_id, name, grp, icon) "
+            "VALUES (%s, %s, %s, %s)",
+            (uid, name, group, icon)
+        )
+
+        db.commit()
+
+        cur.execute(
+            "SELECT id, user_id, name, grp, icon "
+            "FROM categories WHERE id=%s",
+            (cur.lastrowid,)
+        )
+
+        return jsonify(category_json(cur.fetchone())), 201
+
+    finally:
+        db.close()
+
 
 @app.route("/api/categories/<int:category_id>", methods=["DELETE"])
 @login_required
