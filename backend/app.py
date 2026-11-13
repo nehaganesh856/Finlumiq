@@ -1662,6 +1662,7 @@ FEE_SELECT = (
 
 @app.route("/api/fees", methods=["GET"])
 @login_required
+
 def get_fees():
     uid = session["user_id"]
     semester_id = request.args.get("semester_id")
@@ -1672,20 +1673,31 @@ def get_fees():
         cur = db.cursor(dictionary=True)
         q = FEE_SELECT + "WHERE f.user_id=%s"
         params = [uid]
+
         if semester_id:
             q += " AND f.semester_id=%s"
             params.append(semester_id)
+
         if fee_category and fee_category in FEE_CATEGORIES:
             q += " AND f.fee_category=%s"
             params.append(fee_category)
-        q += " GROUP BY f.id ORDER BY f.due_date ASC"
+
+        q += (
+            " GROUP BY f.id, f.user_id, f.semester_id, f.fee_title, f.fee_category, "
+            "f.total_amount, f.due_date, f.description, f.created_at, s.semester_name "
+            "ORDER BY f.due_date ASC"
+        )
+
         cur.execute(q, params)
         result = [fee_json(r) for r in cur.fetchall()]
+
         if status_filter:
             result = [r for r in result if r["status"] == status_filter]
+
         return jsonify(result)
     finally:
         db.close()
+
 
 
 @app.route("/api/fees", methods=["POST"])
@@ -1722,7 +1734,12 @@ def get_fee(fee_id):
     db = get_db()
     try:
         cur = db.cursor(dictionary=True)
-        cur.execute(FEE_SELECT + "WHERE f.id=%s AND f.user_id=%s GROUP BY f.id", (fee_id, uid))
+        cur.execute(
+    FEE_SELECT + "WHERE f.id=%s AND f.user_id=%s "
+    "GROUP BY f.id, f.user_id, f.semester_id, f.fee_title, f.fee_category, "
+    "f.total_amount, f.due_date, f.description, f.created_at, s.semester_name",
+    (fee_id, uid)
+)
         row = cur.fetchone()
         if not row:
             return jsonify({"error": "Fee not found"}), 404
