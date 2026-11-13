@@ -46,12 +46,15 @@ app.config["GOOGLE_CLIENT_ID"] = (
 
 FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://127.0.0.1:8000")
 
+
 app.config.update(
     SECRET_KEY=SECRET_KEY,
     SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_SAMESITE="None",
     PERMANENT_SESSION_LIFETIME=timedelta(days=7),
 )
+
 
 CORS(app, origins=[FRONTEND_ORIGIN], supports_credentials=True)
 
