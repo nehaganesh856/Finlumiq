@@ -90,7 +90,7 @@ async function loadReport(){
   const year=document.getElementById('reportYear').value;
   try{
     const [expenses, income] = await Promise.all([
-      API_CLIENT.get('/expenses'),
+      API_CLIENT.get('/expenses?all=true'),
       API_CLIENT.get('/income')
     ]);
     const yearExp=expenses.filter(e=>e.date.startsWith(year));

@@ -401,7 +401,16 @@ function initializeGoogleSignIn() {
 
             client_id: GOOGLE_CLIENT_ID,
 
-            callback: handleGoogleLogin
+            callback: handleGoogleLogin,
+
+            // Use popup so the credential callback fires reliably
+            // in a cross-origin Netlify → Render setup.
+            ux_mode: "popup",
+
+            // Prevent automatic sign-in loops on return visits.
+            auto_select: false,
+
+            context: "signin"
 
         });
 
@@ -548,7 +557,36 @@ async function submitGoogleLogin(password = null) {
             payload
         );
 
+        // ── Critical: verify that the session cookie was actually
+        // set before navigating away. Cross-origin SameSite=None
+        // cookies can occasionally be blocked; if /auth/me returns
+        // 401 here we know the session was not established.
+        let verifiedUser;
+        try {
+            verifiedUser = await apiGet("/auth/me");
+        } catch (_) {
+            verifiedUser = null;
+        }
+
+        if (!verifiedUser || !verifiedUser.id) {
+            showAlert(
+                "alertBox",
+                "Google sign-in succeeded on the server but the session could not be established. " +
+                "Please check that your browser allows third-party cookies for this site, then try again.",
+                "error"
+            );
+            pendingGoogleCredential = null;
+            if (window.google?.accounts?.id) {
+                google.accounts.id.disableAutoSelect();
+            }
+            return;
+        }
+
         pendingGoogleCredential = null;
+
+        if (window.google?.accounts?.id) {
+            google.accounts.id.disableAutoSelect();
+        }
 
         showAlert(
             "alertBox",
@@ -556,7 +594,8 @@ async function submitGoogleLogin(password = null) {
             "success"
         );
 
-        location.replace("dashboard.html");
+        // Short delay so the user sees the confirmation message.
+        setTimeout(() => location.replace("dashboard.html"), 600);
 
     } catch (error) {
 
@@ -568,10 +607,15 @@ async function submitGoogleLogin(password = null) {
         const message = error.message || "Google login failed.";
 
         // Existing account requires password-based linking.
+        // Backend returns HTTP 409 with link_required:true when an
+        // email-registered account exists but has no google_sub yet.
         const requiresLinking =
             error.status === 409 &&
-            message.toLowerCase().includes(
-                "existing with this email"
+            (
+                message.toLowerCase().includes("link_required") ||
+                message.toLowerCase().includes("already exists") ||
+                message.toLowerCase().includes("existing with this email") ||
+                message.toLowerCase().includes("enter its existing password")
             );
 
         if (

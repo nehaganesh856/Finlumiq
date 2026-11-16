@@ -220,8 +220,8 @@ async function loadExpenses() {
   $('filterStatus').textContent = 'Loading every saved expense…';
   $('expensesTbody').innerHTML = '<tr><td colspan="6"><div class="loading-state"><div class="spinner"></div><span>Loading saved expenses…</span></div></td></tr>';
   try {
-    // Important: no ?month= query here. Load all records first, then filter in the browser.
-    const rows = await API_CLIENT.get('/expenses');
+    // ?all=true loads the full expense history (last 6 months is the default on the dashboard).
+    const rows = await API_CLIENT.get('/expenses?all=true');
     if (!Array.isArray(rows)) throw new Error('GET /api/expenses did not return an array. Check the Network response.');
     allExpenses = rows.map(normalizeExpense);
     populateFilterOptions();

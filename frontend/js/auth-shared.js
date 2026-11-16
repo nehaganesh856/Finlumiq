@@ -43,7 +43,7 @@ async function apiPost(path, body) {
   }
   const data = await res.json().catch(() => ({}));
   if (res.status === 503) {
-    throw new Error("Database is not running. Please start MySQL from XAMPP Control Panel and try again.");
+    throw new Error(data.error || "The service is temporarily unavailable. Please try again shortly.");
   }
   if (!res.ok) throw new Error(data.error || "Request failed. Please try again.");
   return data;

@@ -295,10 +295,10 @@ def _get_gemini_reply(user_message: str, snapshot: dict[str, Any], history: list
             "Activate the backend venv and run: python -m pip install --upgrade google-genai"
         ) from exc
 
-    model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash").strip() or "gemini-3.8-flash"
+    model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash").strip() or "gemini-2.0-flash"
     # A second stable Flash model gives the app another option when the primary
     # model is temporarily out of capacity. This is only used for HTTP 503.
-    fallback_model = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-3.7-flash").strip()
+    fallback_model = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-1.5-flash").strip()
 
     transcript = "\n".join(
         f"{('Student' if item['role'] == 'user' else 'Finlumiq AI')}: {item['content']}"
@@ -317,15 +317,17 @@ def _get_gemini_reply(user_message: str, snapshot: dict[str, Any], history: list
 
     # Configure a bounded retry policy for temporary server overloads.
     # Attempts includes the initial request. Retries use exponential backoff.
+    # Note: 504 (DEADLINE_EXCEEDED) is intentionally excluded from retries —
+    # retrying a timed-out request would only add more latency.
     http_options = types.HttpOptions(
-        timeout=90_000,
+        timeout=60_000,
         retry_options=types.HttpRetryOptions(
-            attempts=3,
+            attempts=2,
             initial_delay=1.0,
-            max_delay=8.0,
+            max_delay=6.0,
             exp_base=2.0,
             jitter=1.0,
-            http_status_codes=[408, 500, 502, 503, 504],
+            http_status_codes=[408, 500, 502, 503],
         ),
     )
     client = genai.Client(api_key=api_key, http_options=http_options)
@@ -342,10 +344,15 @@ def _get_gemini_reply(user_message: str, snapshot: dict[str, Any], history: list
     last_error = None
     for index, model_name in enumerate(models_to_try):
         try:
+            t0 = time.monotonic()
             response = client.models.generate_content(
                 model=model_name,
                 contents=prompt,
                 config=generation_config,
+            )
+            elapsed = time.monotonic() - t0
+            current_app.logger.info(
+                "Gemini model=%s responded in %.2fs", model_name, elapsed
             )
             text = (getattr(response, "text", None) or "").strip()
             if not text:
@@ -403,7 +410,7 @@ def _friendly_gemini_error(exc: Exception) -> tuple[str, int]:
     if code == 404:
         return (
             "Gemini could not find the configured model. Check GEMINI_MODEL; "
-            "the currently documented stable Flash model is gemini-3.8-flash.", 502
+            "the currently documented stable Flash models are gemini-2.0-flash and gemini-1.5-flash.", 502
         )
     if code == 429:
         return (
@@ -417,6 +424,12 @@ def _friendly_gemini_error(exc: Exception) -> tuple[str, int]:
             "minute. This is a temporary Google service-capacity issue, not a MySQL error.", 503
         )
     if code is not None and code >= 500:
+        if code == 504:
+            return (
+                "The Gemini request timed out (DEADLINE_EXCEEDED). Your question may be too complex "
+                "or Google's servers are under heavy load. Try a shorter question or wait a moment "
+                "and try again. This is not a database error.", 504
+            )
         return (
             f"Gemini returned HTTP {code} after the retry attempts. Check Google's Gemini API "
             "status and try again shortly.", 502

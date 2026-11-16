@@ -1,6 +1,6 @@
 // common.js — Shared utilities for all application pages
 
-const API = " https://finlumiq-2.onrender.com/api";
+const API = "https://finlumiq-2.onrender.com/api";
 
 // ---------------------------------------------------------------
 // API Helper
@@ -19,7 +19,8 @@ async function request(path, options = {}) {
   let body = null;
   try { body = await response.json(); } catch { /* no body */ }
   if (response.status === 503) {
-    const err = new Error("Database is unavailable. Please start MySQL from XAMPP and try again.");
+    const serverMsg = body && body.error ? body.error : null;
+    const err = new Error(serverMsg || "Service temporarily unavailable. Please try again in a moment.");
     err.status = 503;
     throw err;
   }

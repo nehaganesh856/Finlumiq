@@ -3,10 +3,12 @@ import logging
 import os
 import re
 import secrets
+import time
 from datetime import date, datetime, timedelta
 from functools import wraps
 from pathlib import Path
 import mysql.connector
+import mysql.connector.pooling
 from dotenv import load_dotenv
 from flask import Flask, jsonify, redirect, request, session
 from flask_cors import CORS
@@ -36,11 +38,31 @@ load_dotenv()
 
 app = Flask(__name__)
 
+
+@app.before_request
+def _before():
+    request._start_time = time.monotonic()
+
+
+@app.after_request
+def _after(response):
+    start = getattr(request, "_start_time", None)
+    if start is not None:
+        elapsed = time.monotonic() - start
+        path = request.path
+        if elapsed > 1.0:
+            logger.warning("SLOW REQUEST %.3fs %s %s", elapsed, request.method, path)
+        else:
+            logger.info("%.3fs %s %s %s", elapsed, request.method, path, response.status_code)
+    return response
+
+
 SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
   
     raise RuntimeError("SECRET_KEY is missing in backend/.env")
-app.config["GOOGLE_CLIENT_ID"] = (
+app.config["GOOGLE_CLIENT_ID"] = os.getenv(
+    "GOOGLE_CLIENT_ID",
     "10575419495-ahcn2dttd279kurp8ihha1p6ujg84ifp.apps.googleusercontent.com"
 )
 
@@ -75,58 +97,81 @@ SCHOLARSHIP_STATUSES = [
 
 
 
-def get_db():
-    try:
-        db_config = {
-            "host": os.getenv("DB_HOST", "127.0.0.1"),
-            "port": int(os.getenv("DB_PORT", "3306")),
-            "user": os.getenv("DB_USER", "root"),
-            "password": os.getenv("DB_PASSWORD", ""),
-            "database": os.getenv("DB_NAME", "expense_tracker"),
-            "charset": "utf8mb4",
-            "connection_timeout": 15,
-            "autocommit": False
-        }
+_db_pool = None
+_db_pool_lock = __import__("threading").Lock()
 
-        # Enable TLS when DB_SSL_CA is configured (TiDB Cloud).
-        ssl_ca = os.getenv("DB_SSL_CA")
 
-        if ssl_ca:
-            ca_path = Path(ssl_ca)
+def _build_db_config():
+    cfg = {
+        "host": os.getenv("DB_HOST", "127.0.0.1"),
+        "port": int(os.getenv("DB_PORT", "3306")),
+        "user": os.getenv("DB_USER", "root"),
+        "password": os.getenv("DB_PASSWORD", ""),
+        "database": os.getenv("DB_NAME", "expense_tracker"),
+        "charset": "utf8mb4",
+        "connection_timeout": 15,
+        "autocommit": False,
+    }
+    ssl_ca = os.getenv("DB_SSL_CA")
+    if ssl_ca:
+        ca_path = Path(ssl_ca)
+        if not ca_path.is_absolute():
+            ca_path = Path(__file__).resolve().parent / ca_path
+        if not ca_path.is_file():
+            raise FileNotFoundError(f"Database CA certificate not found: {ca_path}")
+        cfg.update({
+            "ssl_ca": str(ca_path),
+            "ssl_verify_cert": True,
+            "ssl_verify_identity": True,
+        })
+    return cfg
 
-            if not ca_path.is_absolute():
-                ca_path = Path(__file__).resolve().parent / ca_path
 
-            if not ca_path.is_file():
-                raise FileNotFoundError(
-                    f"Database CA certificate not found: {ca_path}"
-                )
-
-            db_config.update({
-                "ssl_ca": str(ca_path),
-                "ssl_verify_cert": True,
-                "ssl_verify_identity": True
-            })
-
-        connection = mysql.connector.connect(**db_config)
-
-        if not connection.is_connected():
-            raise mysql.connector.Error(
-                "MySQL connection was not established."
-            )
-
-        logger.info(
-            "MySQL connected successfully: database=%s host=%s port=%s",
-            db_config["database"],
-            db_config["host"],
-            db_config["port"]
+def _get_pool():
+    global _db_pool
+    if _db_pool is not None:
+        return _db_pool
+    with _db_pool_lock:
+        if _db_pool is not None:
+            return _db_pool
+        t0 = __import__("time").monotonic()
+        cfg = _build_db_config()
+        _db_pool = mysql.connector.pooling.MySQLConnectionPool(
+            pool_name="finlumiq_pool",
+            pool_size=5,
+            pool_reset_session=True,
+            **cfg,
         )
+        logger.info(
+            "DB pool created in %.3fs: host=%s port=%s db=%s",
+            __import__("time").monotonic() - t0,
+            cfg["host"], cfg["port"], cfg["database"],
+        )
+    return _db_pool
 
+
+def get_db():
+    import time
+    t0 = time.monotonic()
+    try:
+        pool = _get_pool()
+        connection = pool.get_connection()
+        elapsed = time.monotonic() - t0
+        if elapsed > 1.0:
+            logger.warning("DB connection acquired in %.3fs (slow)", elapsed)
         return connection
-
-    except (mysql.connector.Error, ValueError, OSError):
+    except mysql.connector.errors.PoolError:
+        # Pool exhausted — fall back to a direct connection rather than aborting
+        logger.warning("Connection pool exhausted; opening direct connection")
+        try:
+            cfg = _build_db_config()
+            return mysql.connector.connect(**cfg)
+        except (mysql.connector.Error, ValueError, OSError):
+            logger.exception("MySQL direct connection also failed")
+            from flask import abort
+            abort(503)
+    except (mysql.connector.Error, ValueError, OSError, FileNotFoundError):
         logger.exception("MySQL database connection failed")
-
         from flask import abort
         abort(503)
 
@@ -135,8 +180,8 @@ def get_db():
 @app.errorhandler(503)
 def service_unavailable(e):
     return jsonify({
-        "error": "Database unavailable. Please start MySQL and try again.",
-        "hint": "Start MySQL from XAMPP Control Panel or run start.bat as Administrator."
+        "error": "The database is temporarily unavailable. Please try again in a moment.",
+        "hint": "If this persists, check the backend logs and database connection settings."
     }), 503
 
 
@@ -1428,6 +1473,10 @@ def category_allowed(cur, category_id, uid):
 def get_expenses():
     uid = session["user_id"]
     month = request.args.get("month", "").strip()
+    # ?all=true fetches the full history (used by the Expenses page, reports, charts).
+    # Without it, the endpoint returns the last 6 months by default to keep
+    # dashboard and calendar responses fast.
+    fetch_all = request.args.get("all", "").lower() in ("1", "true", "yes")
 
     db = get_db()
 
@@ -1464,12 +1513,28 @@ def get_expenses():
                 (uid, start_date, end_date)
             )
 
-        else:
+        elif fetch_all:
             cur.execute(
                 EXPENSE_SELECT +
                 "WHERE e.user_id=%s "
                 "ORDER BY e.expense_date DESC, e.id DESC",
                 (uid,)
+            )
+
+        else:
+            # Default: last 6 months — covers dashboard charts, calendar & recent expenses
+            today = date.today()
+            six_months_ago = date(
+                today.year if today.month > 6 else today.year - 1,
+                today.month - 6 if today.month > 6 else today.month + 6,
+                1,
+            )
+            cur.execute(
+                EXPENSE_SELECT +
+                "WHERE e.user_id=%s "
+                "AND e.expense_date >= %s "
+                "ORDER BY e.expense_date DESC, e.id DESC",
+                (uid, six_months_ago.isoformat())
             )
 
         rows = cur.fetchall()

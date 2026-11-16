@@ -282,7 +282,7 @@
 
   <!-- A glance at connected modules -->
   <section aria-labelledby="glanceHeading">
-    <div class="dashboard-section-head"><div class="section-title" id="glanceHeading">📋 Your Student Finance at a Glance</div><a href="reports.html" class="btn btn-sm btn-secondary">Open Reports →</a></div>
+    <div class="dashboard-section-head"><div class="section-title" id="glanceHeading">📋 Your Student Finance at a Glance</div><a href="/pages/reports.html" class="btn btn-sm btn-secondary">Open Reports →</a></div>
     <div class="glance-grid" id="glanceGrid"><div class="loading-state"><div class="spinner"></div><span>Loading dashboard data…</span></div></div>
   </section>
 
@@ -629,6 +629,8 @@ let selectedCalendarDate = localTodayISO();
   async function loadAll() {
     const definitions = [
       ['dashboard','/dashboard'],['budget','/budget'],['groupBudgets','/group-budgets'],
+      // /expenses with no ?all=true returns last 6 months — enough for dashboard charts,
+      // calendar, recent expenses and all summaries. The full Expenses page uses ?all=true.
       ['expenses','/expenses'],['income','/income'],['fees','/fees'],['goals','/savings-goals'],
       ['scholarships','/scholarships'],['reminders','/reminders']
     ];
