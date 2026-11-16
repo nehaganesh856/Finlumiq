@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 import os
 import threading
-import time
+import random
 from collections import defaultdict, deque
 from datetime import date, datetime, timedelta
 from decimal import Decimal
@@ -310,13 +310,14 @@ def _get_gemini_reply(
     try:
         from google import genai
         from google.genai import types
+        from google.api_core import exceptions as gae_exceptions
     except ImportError as exc:
         raise ImportError(
             "Google Gen AI SDK is not installed."
         ) from exc
 
     model = os.getenv(
-        "GEMINI_MODEL", "gemini-3.8-flash"
+        "GEMINI_MODEL", "gemini-1.5-flash"
     ).strip()
 
     # Set this in Render to another model verified
