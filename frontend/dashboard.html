@@ -3,212 +3,242 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard —Finlumiq</title>
+<title>Dashboard — Finlumiq</title>
 <meta name="description" content="Finlumiq student financial dashboard: expenses, income, budgets, semesters, fees, savings, scholarships and more.">
 <link rel="stylesheet" href="css/app.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-  .dash-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
-  @media(max-width:850px){.dash-grid{grid-template-columns:1fr}}
-  .quick-add-form{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr auto;gap:10px;align-items:end}
-  @media(max-width:900px){.quick-add-form{grid-template-columns:1fr 1fr}}
-  @media(max-width:520px){.quick-add-form{grid-template-columns:1fr}}
-  .dash-alert{border-radius:var(--radius);padding:14px 18px;margin-bottom:18px;border:1px solid var(--border);background:var(--surface)}
-  .dash-alert.danger{border-color:#ef4444;background:rgba(239,68,68,.08)}
-  .dash-alert.warning{border-color:#f59e0b;background:rgba(245,158,11,.10)}
-  .dash-alert ul{margin:8px 0 0 18px;padding:0;font-size:.88rem}.dash-alert li{margin:4px 0}
-  .dash-warning{padding:10px 13px;border:1px solid var(--border);border-radius:var(--radius);color:var(--muted);font-size:.83rem;margin-bottom:16px}
-  .budget-nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;text-align:center;margin-bottom:14px}
-  .budget-num{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 8px;min-width:0}
-  .budget-num-val{font-size:clamp(1rem,2vw,1.4rem);font-weight:800;overflow-wrap:anywhere}
-  .budget-num-lbl{font-size:.76rem;color:var(--muted);margin-top:3px}
-  @media(max-width:480px){.budget-nums{grid-template-columns:1fr}}
-  .gb-row{margin-top:12px}.gb-head{display:flex;justify-content:space-between;gap:10px;font-size:.82rem;margin-bottom:5px}
-  .glance-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:20px}
-  .glance-tile{display:block;color:inherit;text-decoration:none;transition:transform .15s,box-shadow .15s}
-  .glance-tile:hover,.module-tile:hover{transform:translateY(-2px);box-shadow:var(--shadow-md,0 6px 18px rgba(0,0,0,.12))}
-  .glance-top{display:flex;justify-content:space-between;align-items:center;font-size:.82rem;color:var(--muted);margin-bottom:6px}
-  .glance-val{font-size:1.35rem;font-weight:800;overflow-wrap:anywhere}.glance-sub{font-size:.78rem;color:var(--muted);margin-top:4px;line-height:1.45}
-  .glance-tile .progress-track{margin-top:9px}
-  .module-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin-bottom:22px}
-  .module-tile{display:flex;align-items:flex-start;gap:11px;min-height:92px;padding:15px;text-decoration:none;color:inherit;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface);transition:transform .15s,box-shadow .15s,border-color .15s}
-  .module-tile:focus-visible,.glance-tile:focus-visible{outline:3px solid var(--primary,#6366f1);outline-offset:3px}
-  .module-icon{width:40px;height:40px;display:grid;place-items:center;flex:0 0 40px;border-radius:12px;background:var(--surface-2);font-size:1.25rem}
-  .module-title{font-weight:750;font-size:.88rem;margin:2px 0 4px}.module-desc{font-size:.75rem;line-height:1.4;color:var(--muted)}
-  .goal-mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  @media(max-width:500px){.goal-mini-grid{grid-template-columns:1fr}}
-  .goal-mini-card{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:13px;min-width:0}
-  .fee-row{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--border)}.fee-row:last-child{border-bottom:0}
-  .fee-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-  .dashboard-section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
-  .dashboard-section-head .section-title{margin-bottom:0}
-  .quick-add-hint{font-size:.78rem;color:var(--muted);margin-top:8px}
-  .module-more{font-size:.76rem;color:var(--muted);white-space:nowrap}
-  .empty-inline{font-size:.86rem;color:var(--muted);padding:8px 0}
-  .data-label{font-size:.78rem;color:var(--muted)}
-  .negative-text{color:var(--danger,#dc2626)}
+/* ── Dashboard layout ─────────────────────────────────────── */
+.dash-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
+@media(max-width:850px){.dash-grid{grid-template-columns:1fr}}
+.quick-add-form{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr auto;gap:10px;align-items:end}
+@media(max-width:900px){.quick-add-form{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.quick-add-form{grid-template-columns:1fr}}
+.dash-alert{border-radius:var(--radius);padding:14px 18px;margin-bottom:18px;border:1px solid var(--border);background:var(--surface)}
+.dash-alert.danger{border-color:#ef4444;background:rgba(239,68,68,.08)}
+.dash-alert.warning{border-color:#f59e0b;background:rgba(245,158,11,.10)}
+.dash-alert ul{margin:8px 0 0 18px;padding:0;font-size:.88rem}.dash-alert li{margin:4px 0}
+.dash-warning{padding:10px 13px;border:1px solid var(--border);border-radius:var(--radius);color:var(--muted);font-size:.83rem;margin-bottom:16px}
+.budget-nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;text-align:center;margin-bottom:14px}
+.budget-num{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 8px;min-width:0}
+.budget-num-val{font-size:clamp(1rem,2vw,1.4rem);font-weight:800;overflow-wrap:anywhere}
+.budget-num-lbl{font-size:.76rem;color:var(--muted);margin-top:3px}
+@media(max-width:480px){.budget-nums{grid-template-columns:1fr}}
+.gb-row{margin-top:12px}.gb-head{display:flex;justify-content:space-between;gap:10px;font-size:.82rem;margin-bottom:5px}
+.glance-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:20px}
+.glance-tile{display:block;color:inherit;text-decoration:none;transition:transform .15s,box-shadow .15s}
+.glance-tile:hover,.module-tile:hover{transform:translateY(-2px);box-shadow:var(--shadow-md,0 6px 18px rgba(0,0,0,.12))}
+.glance-top{display:flex;justify-content:space-between;align-items:center;font-size:.82rem;color:var(--muted);margin-bottom:6px}
+.glance-val{font-size:1.35rem;font-weight:800;overflow-wrap:anywhere}.glance-sub{font-size:.78rem;color:var(--muted);margin-top:4px;line-height:1.45}
+.glance-tile .progress-track{margin-top:9px}
+.module-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin-bottom:22px}
+.module-tile{display:flex;align-items:flex-start;gap:11px;min-height:92px;padding:15px;text-decoration:none;color:inherit;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface);transition:transform .15s,box-shadow .15s,border-color .15s}
+.module-tile:focus-visible,.glance-tile:focus-visible{outline:3px solid var(--primary,#6366f1);outline-offset:3px}
+.module-icon{width:40px;height:40px;display:grid;place-items:center;flex:0 0 40px;border-radius:12px;background:var(--surface-2);font-size:1.25rem}
+.module-title{font-weight:750;font-size:.88rem;margin:2px 0 4px}.module-desc{font-size:.75rem;line-height:1.4;color:var(--muted)}
+.goal-mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:500px){.goal-mini-grid{grid-template-columns:1fr}}
+.goal-mini-card{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:13px;min-width:0}
+.fee-row{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--border)}.fee-row:last-child{border-bottom:0}
+.fee-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dashboard-section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.dashboard-section-head .section-title{margin-bottom:0}
+.quick-add-hint{font-size:.78rem;color:var(--muted);margin-top:8px}
+.module-more{font-size:.76rem;color:var(--muted);white-space:nowrap}
+.empty-inline{font-size:.86rem;color:var(--muted);padding:8px 0}
+.data-label{font-size:.78rem;color:var(--muted)}
+.negative-text{color:var(--danger,#dc2626)}
 
-/* Expense Calendar */
-.exp-calendar-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(240px, .8fr);
-  gap: 20px;
-  align-items: start;
+/* ══════════════════════════════════════════════════════════
+   PREMIUM EXPENSE CALENDAR
+   ══════════════════════════════════════════════════════════ */
+/* Top row: title + nav */
+.cal-top-row {
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 10px; margin-bottom: 14px;
+}
+.cal-title-block { }
+.cal-nav-controls {
+  display: flex; align-items: center; gap: 6px;
+}
+.cal-month-name {
+  font-size: 1.08rem; font-weight: 800; min-width: 155px;
+  text-align: center; font-family: var(--font-display);
 }
 
-.exp-calendar-nav {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+/* Monthly summary pills */
+.cal-stats-bar {
+  display: grid; grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: 8px; margin-bottom: 16px;
+}
+@media(max-width:620px){ .cal-stats-bar { grid-template-columns: 1fr 1fr; } }
+@media(max-width:340px){ .cal-stats-bar { grid-template-columns: 1fr; } }
+.cal-stat-pill {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px 12px;
+}
+.cal-stat-pill-lbl {
+  font-size: .67rem; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .05em; font-weight: 600;
+}
+.cal-stat-pill-val {
+  font-size: .97rem; font-weight: 800; margin-top: 3px;
+  overflow-wrap: anywhere;
 }
 
-.exp-calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 7px;
-  margin-top: 15px;
+/* Layout: grid + detail panel */
+.cal-body-layout {
+  display: grid; grid-template-columns: 1fr 272px;
+  gap: 16px; align-items: start;
+}
+@media(max-width:810px){ .cal-body-layout { grid-template-columns: 1fr; } }
+
+/* Weekday headers */
+.cal-weekdays {
+  display: grid; grid-template-columns: repeat(7,minmax(0,1fr));
+  gap: 3px; margin-bottom: 3px;
+}
+.cal-wd {
+  text-align: center; font-size: .66rem; font-weight: 700;
+  color: var(--muted); padding: 6px 2px;
+  text-transform: uppercase; letter-spacing: .04em;
 }
 
-.exp-calendar-weekday {
-  text-align: center;
-  color: var(--muted);
+/* Day grid */
+.cal-days-grid {
+  display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 3px;
+}
+.cal-day {
+  position: relative; min-height: 70px; padding: 6px 4px 4px;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface-2); cursor: pointer;
+  transition: border-color .12s, background .12s, transform .1s, z-index 0s;
+  display: flex; flex-direction: column; align-items: center;
+  user-select: none; -webkit-tap-highlight-color: transparent;
+}
+.cal-day:hover {
+  border-color: var(--primary); background: var(--primary-soft);
+  transform: scale(1.05); z-index: 2;
+}
+.cal-day:active  { transform: scale(1.01); }
+.cal-day.cal-empty {
+  background: transparent; border-color: transparent;
+  cursor: default; pointer-events: none;
+}
+
+/* Today */
+.cal-day.cal-today .cal-day-num {
+  background: var(--primary); color: #fff !important;
+  border-radius: 50%; width: 23px; height: 23px;
+  display: flex; align-items: center; justify-content: center;
   font-size: .78rem;
-  font-weight: 700;
-  padding: 8px 2px;
+}
+/* Selected */
+.cal-day.cal-selected {
+  border-color: var(--primary); border-width: 2px;
+  background: var(--primary-soft);
+}
+.cal-day.cal-selected .cal-day-num { color: var(--primary); font-weight: 900; }
+
+/* Day number */
+.cal-day-num {
+  font-size: .82rem; font-weight: 700; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  width: 23px; height: 23px; flex-shrink: 0;
 }
 
-.exp-calendar-day {
-  min-width: 0;
-  min-height: 76px;
-  padding: 7px 4px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface-2);
-  color: var(--text);
-  cursor: pointer;
-  text-align: center;
-  transition: .15s;
+/* Spending dot */
+.cal-day-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  margin: 3px auto 1px; flex-shrink: 0; display: none;
+}
+.cal-day.has-spend .cal-day-dot { display: block; }
+.cal-day.spend-low  .cal-day-dot { background: #22c55e; }
+.cal-day.spend-med  .cal-day-dot { background: #f59e0b; }
+.cal-day.spend-high .cal-day-dot { background: #ef4444; }
+
+/* Spending amount label */
+.cal-day-amt {
+  font-size: .58rem; font-weight: 700; text-align: center;
+  overflow-wrap: anywhere; line-height: 1.2; display: none;
+}
+.cal-day.has-spend .cal-day-amt { display: block; }
+.cal-day.spend-low  .cal-day-amt { color: #16a34a; }
+.cal-day.spend-med  .cal-day-amt { color: #b45309; }
+.cal-day.spend-high .cal-day-amt { color: #dc2626; }
+
+/* Peak day red dot in corner */
+.cal-day.cal-peak::after {
+  content: ''; position: absolute; top: 3px; right: 4px;
+  width: 5px; height: 5px; border-radius: 50%; background: var(--danger);
 }
 
-.exp-calendar-day:hover {
-  border-color: var(--primary);
+/* Detail panel */
+.cal-detail-panel {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 16px;
+  min-height: 200px; position: sticky; top: 80px;
 }
-
-.exp-calendar-day.selected {
-  border: 2px solid var(--primary);
-  background: rgba(99,102,241,.10);
+.cal-detail-date {
+  font-size: .98rem; font-weight: 800; margin-bottom: 10px;
+  font-family: var(--font-display);
 }
-
-.exp-calendar-day.today .day-number {
-  color: var(--primary);
-  font-weight: 900;
+.cal-detail-nums {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;
 }
-
-.exp-calendar-day .day-number {
-  display: block;
-  font-weight: 700;
-  font-size: .9rem;
+.cal-detail-num {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 9px 10px;
 }
+.cal-detail-num-val { font-size: 1rem; font-weight: 800; }
+.cal-detail-num-lbl { font-size: .67rem; color: var(--muted); margin-top: 2px; }
 
-.exp-calendar-day .day-amount {
-  display: block;
-  margin-top: 7px;
-  font-size: .68rem;
-  color: var(--muted);
-  overflow-wrap: anywhere;
+.cal-txns { overflow-y: auto; max-height: 310px; }
+.cal-txn {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--border);
 }
-
-.exp-calendar-day.has-expenses .day-amount {
-  color: var(--primary);
-  font-weight: 750;
+.cal-txn:last-child { border-bottom: 0; }
+.cal-txn-left { min-width: 0; flex: 1; }
+.cal-txn-title {
+  font-weight: 700; font-size: .84rem;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-
-.exp-calendar-empty {
-  min-height: 76px;
+.cal-txn-badge {
+  display: inline-block; margin-top: 3px; font-size: .64rem; font-weight: 600;
+  padding: 2px 7px; border-radius: var(--radius-full);
+  background: var(--primary-soft); color: var(--primary);
+  border: 1px solid rgba(99,102,241,.18);
 }
-
-.exp-calendar-summary {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 15px;
+.cal-txn-amt {
+  font-weight: 800; font-size: .9rem; white-space: nowrap;
+  color: var(--danger); flex-shrink: 0;
 }
-
-.exp-calendar-summary > div {
-  padding: 12px;
-  border-radius: var(--radius);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
+.cal-no-txns {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px; padding: 28px 10px; color: var(--muted);
+  text-align: center; font-size: .83rem;
 }
+.cal-no-txns-icon { font-size: 2rem; opacity: .4; }
 
-.exp-calendar-summary-label {
-  color: var(--muted);
-  font-size: .75rem;
+/* Mobile */
+@media(max-width:480px){
+  .cal-day { min-height: 50px; padding: 4px 2px 2px; }
+  .cal-day-num { width: 20px; height: 20px; font-size: .72rem; }
+  .cal-day.cal-today .cal-day-num { width: 20px; height: 20px; }
+  .cal-day-dot { width: 5px; height: 5px; margin: 2px auto 1px; }
+  .cal-day-amt { font-size: .5rem; }
+  .cal-month-name { min-width: 120px; font-size: .9rem; }
 }
-
-.exp-calendar-summary-value {
-  font-size: 1.05rem;
-  font-weight: 800;
-  margin-top: 4px;
-  overflow-wrap: anywhere;
-}
-
-.exp-calendar-record {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  border-bottom: 1px solid var(--border);
-  padding: 12px 0;
-}
-
-.exp-calendar-record:last-child {
-  border-bottom: 0;
-}
-
-.exp-calendar-record-title {
-  font-weight: 700;
-  font-size: .86rem;
-}
-
-.exp-calendar-record-sub {
-  color: var(--muted);
-  font-size: .76rem;
-  margin-top: 4px;
-}
-
-.exp-calendar-record-amount {
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-@media(max-width:750px) {
-  .exp-calendar-layout {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media(max-width:480px) {
-  .exp-calendar-grid {
-    gap: 3px;
-  }
-
-  .exp-calendar-day {
-    min-height: 57px;
-    padding: 5px 1px;
-  }
-
-  .exp-calendar-day .day-amount {
-    font-size: .58rem;
-  }
-}
-
 </style>
 </head>
 <body>
 <div id="appNav"></div>
 <header class="topbar">
-  <a class="topbar-brand" href="dashboard.html" aria-label="Finlumiq dashboard"><div class="topbar-logo">🎓</div><span class="topbar-title">Finlumiq</span></a>
+  <a class="topbar-brand" href="dashboard.html" aria-label="Finlumiq dashboard">
+    <div class="topbar-logo">🎓</div>
+    <span class="topbar-title">Finlumiq</span>
+  </a>
   <div class="topbar-right">
     <span class="topbar-page-title" aria-current="page">Dashboard</span>
     <button class="theme-toggle-btn" type="button" aria-label="Toggle theme">🌙</button>
@@ -228,41 +258,67 @@
   <div id="alertBanner" class="dash-alert" hidden></div>
   <div id="dashboardLoadWarning" class="dash-warning" hidden></div>
 
-  <!-- Core database-backed numbers -->
+  <!-- ── Stat cards (clickable) ── -->
   <section class="stat-cards" aria-label="Financial overview">
-    <a class="stat-card" href="reports.html" style="color:inherit;text-decoration:none">
-      <div class="stat-label">Total Balance</div><div class="stat-icon">💰</div><div class="stat-value" id="statBalance">₹0</div><div class="stat-sub" id="statBalanceSub">Income minus expenses</div>
+    <a class="stat-card" href="reports.html" style="color:inherit;text-decoration:none" title="Open Reports →">
+      <div class="stat-label">Total Balance</div><div class="stat-icon">💰</div>
+      <div class="stat-value" id="statBalance"><span class="skel skel-line h-xl w-80"></span></div>
+      <div class="stat-sub"  id="statBalanceSub"><span class="skel skel-line w-60" style="margin-top:6px"></span></div>
     </a>
-    <a class="stat-card success" href="income.html" style="color:inherit;text-decoration:none">
-      <div class="stat-label">Month Income</div><div class="stat-icon">📈</div><div class="stat-value" id="statMonthIncome">₹0</div><div class="stat-sub" id="monthLabel2"></div>
+    <a class="stat-card success" href="income.html" style="color:inherit;text-decoration:none" title="Open Income →">
+      <div class="stat-label">Month Income</div><div class="stat-icon">📈</div>
+      <div class="stat-value" id="statMonthIncome"><span class="skel skel-line h-xl w-80"></span></div>
+      <div class="stat-sub"  id="monthLabel2"><span class="skel skel-line w-60" style="margin-top:6px"></span></div>
     </a>
-    <a class="stat-card warning" href="expenses.html" style="color:inherit;text-decoration:none">
-      <div class="stat-label">Month Expenses</div><div class="stat-icon">📉</div><div class="stat-value" id="statMonthExp">₹0</div><div class="stat-sub" id="statMonthExpSub"></div>
+    <a class="stat-card warning" href="expenses.html" style="color:inherit;text-decoration:none" title="Open Expenses →">
+      <div class="stat-label">Month Expenses</div><div class="stat-icon">📉</div>
+      <div class="stat-value" id="statMonthExp"><span class="skel skel-line h-xl w-80"></span></div>
+      <div class="stat-sub"  id="statMonthExpSub"><span class="skel skel-line w-60" style="margin-top:6px"></span></div>
     </a>
-    <a class="stat-card info" href="budgets.html" style="color:inherit;text-decoration:none">
-      <div class="stat-label">Budget Remaining</div><div class="stat-icon">🎯</div><div class="stat-value" id="statBudgetLeft">₹0</div><div class="stat-sub" id="budgetLeftSub">No budget set</div>
+    <a class="stat-card info" href="budgets.html" style="color:inherit;text-decoration:none" title="Open Budgets →">
+      <div class="stat-label">Budget Remaining</div><div class="stat-icon">🎯</div>
+      <div class="stat-value" id="statBudgetLeft"><span class="skel skel-line h-xl w-80"></span></div>
+      <div class="stat-sub"  id="budgetLeftSub"><span class="skel skel-line w-60" style="margin-top:6px"></span></div>
     </a>
   </section>
 
-  <!-- Monthly and category budget -->
+  <!-- ── Monthly Budget ── -->
   <section class="card mb-24" id="budgetCard">
     <div class="dashboard-section-head">
       <div class="section-title">🎯 Monthly Budget</div>
-      <div class="d-flex align-center gap-8"><span id="budgetBadge" class="badge badge-muted">Not set</span><a href="budgets.html" class="btn btn-sm btn-secondary">Manage budgets →</a></div>
+      <div class="d-flex align-center gap-8">
+        <span id="budgetBadge" class="badge badge-muted">Not set</span>
+        <a href="budgets.html" class="btn btn-sm btn-secondary">Manage budgets →</a>
+      </div>
     </div>
-    <div class="budget-nums">
-      <div class="budget-num"><div class="budget-num-val" id="bTotal">Not set</div><div class="budget-num-lbl">Total budget</div></div>
-      <div class="budget-num"><div class="budget-num-val" id="bSpent">₹0</div><div class="budget-num-lbl">Spent this month</div></div>
-      <div class="budget-num"><div class="budget-num-val" id="bLeft">—</div><div class="budget-num-lbl">Remaining of total</div></div>
+    <!-- skeleton wrapper shown until data arrives -->
+    <div id="budgetSkeleton">
+      <div class="budget-nums">
+        <div class="budget-num"><span class="skel skel-line h-lg" style="margin-bottom:4px"></span><div class="budget-num-lbl">Total budget</div></div>
+        <div class="budget-num"><span class="skel skel-line h-lg" style="margin-bottom:4px"></span><div class="budget-num-lbl">Spent this month</div></div>
+        <div class="budget-num"><span class="skel skel-line h-lg" style="margin-bottom:4px"></span><div class="budget-num-lbl">Remaining</div></div>
+      </div>
+      <div class="progress-track" style="margin-bottom:8px"><div class="skel" style="height:8px;border-radius:var(--radius-full)"></div></div>
     </div>
-    <div class="progress-track"><div class="progress-fill success" id="bBar" style="width:0%"></div></div>
-    <div class="text-muted mt-8" id="bNote" style="font-size:.82rem"></div>
-    <div id="groupBudgets"></div>
+    <!-- real budget content (populated by JS) -->
+    <div id="budgetReal" hidden>
+      <div class="budget-nums">
+        <div class="budget-num"><div class="budget-num-val" id="bTotal">Not set</div><div class="budget-num-lbl">Total budget</div></div>
+        <div class="budget-num"><div class="budget-num-val" id="bSpent">₹0</div><div class="budget-num-lbl">Spent this month</div></div>
+        <div class="budget-num"><div class="budget-num-val" id="bLeft">—</div><div class="budget-num-lbl">Remaining of total</div></div>
+      </div>
+      <div class="progress-track"><div class="progress-fill success" id="bBar" style="width:0%"></div></div>
+      <div class="text-muted mt-8" id="bNote" style="font-size:.82rem"></div>
+      <div id="groupBudgets"></div>
+    </div>
   </section>
 
-  <!-- Every project page has a clickable card -->
+  <!-- ── Explore Finlumiq modules ── -->
   <section aria-labelledby="modulesHeading">
-    <div class="dashboard-section-head"><div class="section-title" id="modulesHeading">🧭 Explore Finlumiq</div><span class="module-more">Select any card to open that page</span></div>
+    <div class="dashboard-section-head">
+      <div class="section-title" id="modulesHeading">🧭 Explore Finlumiq</div>
+      <span class="module-more">Select any card to open that page</span>
+    </div>
     <div class="module-grid" id="moduleGrid">
       <a class="module-tile" href="/pages/expenses.html"><span class="module-icon">💸</span><span><div class="module-title">Expenses</div><div class="module-desc">Add, edit and review spending</div></span></a>
       <a class="module-tile" href="/pages/income.html"><span class="module-icon">💵</span><span><div class="module-title">Income</div><div class="module-desc">Track pocket money and income</div></span></a>
@@ -276,113 +332,110 @@
       <a class="module-tile" href="/pages/receipt-scanner.html"><span class="module-icon">🧾</span><span><div class="module-title">Receipt Scanner</div><div class="module-desc">Scan receipts to capture expenses</div></span></a>
       <a class="module-tile" href="/pages/reports.html"><span class="module-icon">📊</span><span><div class="module-title">Reports</div><div class="module-desc">Review spending and trends</div></span></a>
       <a class="module-tile" href="/pages/reminders.html"><span class="module-icon">🔔</span><span><div class="module-title">Reminders</div><div class="module-desc">Upcoming fees and deadlines</div></span></a>
-      <a class="module-tile" href="/pages/profile-settings.html"><span class="module-icon">👤</span><span><div class="module-title">Profile & Settings</div><div class="module-desc">Manage your account</div></span></a>
+      <a class="module-tile" href="/pages/profile-settings.html"><span class="module-icon">👤</span><span><div class="module-title">Profile &amp; Settings</div><div class="module-desc">Manage your account</div></span></a>
     </div>
   </section>
 
-  <!-- A glance at connected modules -->
+  <!-- ── Student Finance at a Glance ── -->
   <section aria-labelledby="glanceHeading">
-    <div class="dashboard-section-head"><div class="section-title" id="glanceHeading">📋 Your Student Finance at a Glance</div><a href="/pages/reports.html" class="btn btn-sm btn-secondary">Open Reports →</a></div>
-    <div class="glance-grid" id="glanceGrid"><div class="loading-state"><div class="spinner"></div><span>Loading dashboard data…</span></div></div>
+    <div class="dashboard-section-head">
+      <div class="section-title" id="glanceHeading">📋 Your Student Finance at a Glance</div>
+      <a href="/pages/reports.html" class="btn btn-sm btn-secondary">Open Reports →</a>
+    </div>
+    <div class="glance-grid" id="glanceGrid">
+      <!-- skeleton tiles -->
+      <div class="card skel-tile" style="min-height:90px"></div>
+      <div class="card skel-tile" style="min-height:90px"></div>
+      <div class="card skel-tile" style="min-height:90px"></div>
+      <div class="card skel-tile" style="min-height:90px"></div>
+    </div>
   </section>
 
-<!-- NEW: Interactive Expense Calendar -->
-<section class="card mb-24" id="expenseCalendarCard">
+  <!-- ══════════════════════════════════════════════════
+       PREMIUM EXPENSE CALENDAR
+       ══════════════════════════════════════════════════ -->
+  <section class="card mb-24" id="expenseCalendarCard">
 
-  <div class="dashboard-section-head">
-    <div>
-      <div class="section-title">📅 Expense Calendar</div>
-      <p class="data-label">
-        Select any date to see your daily spending and transactions.
-      </p>
-    </div>
-
-    <div class="exp-calendar-nav">
-      <button type="button" class="btn btn-sm btn-secondary"
-              id="expenseCalendarPrev" aria-label="Previous month">
-        ❮
-      </button>
-      <button type="button" class="btn btn-sm btn-secondary"
-              id="expenseCalendarToday">
-        Today
-      </button>
-      <button type="button" class="btn btn-sm btn-secondary"
-              id="expenseCalendarNext" aria-label="Next month">
-        ❯
-      </button>
-    </div>
-  </div>
-
-  <div class="exp-calendar-layout">
-
-    <div>
-      <h3 id="expenseCalendarMonth"
-          style="font-size:1.1rem;margin:12px 0">
-        Loading calendar...
-      </h3>
-
-      <div class="exp-calendar-grid" id="expenseCalendarGrid">
-        <div class="empty-inline">Loading expenses...</div>
+    <!-- Top row: title + nav -->
+    <div class="cal-top-row">
+      <div class="cal-title-block">
+        <div class="section-title" style="margin-bottom:3px">📅 Expense Calendar</div>
+        <p class="data-label">Click any date to view daily spending and transactions.</p>
       </div>
-
-      <div class="exp-calendar-summary">
-        <div>
-          <div class="exp-calendar-summary-label">
-            Monthly spending
-          </div>
-          <div class="exp-calendar-summary-value"
-               id="calendarMonthlyTotal">₹0</div>
-        </div>
-
-        <div>
-          <div class="exp-calendar-summary-label">
-            Transactions this month
-          </div>
-          <div class="exp-calendar-summary-value"
-               id="calendarMonthlyCount">0</div>
-        </div>
+      <div class="cal-nav-controls">
+        <button type="button" class="btn btn-sm btn-secondary" id="expenseCalendarPrev" aria-label="Previous month">❮</button>
+        <span class="cal-month-name" id="expenseCalendarMonth">Loading…</span>
+        <button type="button" class="btn btn-sm btn-secondary" id="expenseCalendarToday">Today</button>
+        <button type="button" class="btn btn-sm btn-secondary" id="expenseCalendarNext" aria-label="Next month">❯</button>
       </div>
     </div>
 
-    <div>
-      <div class="section-title" id="calendarSelectedDate">
-        Selected date
+    <!-- Monthly summary pills -->
+    <div class="cal-stats-bar">
+      <div class="cal-stat-pill">
+        <div class="cal-stat-pill-lbl">Monthly total</div>
+        <div class="cal-stat-pill-val" id="calendarMonthlyTotal">₹0</div>
       </div>
-
-      <div class="exp-calendar-summary">
-        <div>
-          <div class="exp-calendar-summary-label">
-            Daily spending
-          </div>
-          <div class="exp-calendar-summary-value"
-               id="calendarDailyTotal">₹0</div>
-        </div>
-
-        <div>
-          <div class="exp-calendar-summary-label">
-            Transactions
-          </div>
-          <div class="exp-calendar-summary-value"
-               id="calendarDailyCount">0</div>
-        </div>
+      <div class="cal-stat-pill">
+        <div class="cal-stat-pill-lbl">Transactions</div>
+        <div class="cal-stat-pill-val" id="calendarMonthlyCount">0</div>
       </div>
-
-      <div id="calendarDailyExpenses" style="margin-top:12px"
-           aria-live="polite">
-        <div class="empty-inline">
-          Select a date to view your expenses.
-        </div>
+      <div class="cal-stat-pill">
+        <div class="cal-stat-pill-lbl">Daily average</div>
+        <div class="cal-stat-pill-val" id="calDailyAvg">₹0</div>
+      </div>
+      <div class="cal-stat-pill">
+        <div class="cal-stat-pill-lbl">Peak day</div>
+        <div class="cal-stat-pill-val" id="calPeakDay">—</div>
       </div>
     </div>
 
-  </div>
-</section>
-<!-- END: Interactive Expense Calendar -->
+    <!-- Grid + Detail panel -->
+    <div class="cal-body-layout">
 
+      <!-- Left: calendar grid -->
+      <div>
+        <div class="cal-weekdays">
+          <div class="cal-wd">Sun</div><div class="cal-wd">Mon</div><div class="cal-wd">Tue</div>
+          <div class="cal-wd">Wed</div><div class="cal-wd">Thu</div><div class="cal-wd">Fri</div><div class="cal-wd">Sat</div>
+        </div>
+        <div class="cal-days-grid" id="expenseCalendarGrid">
+          <!-- skeleton day cells -->
+          <div class="skel cal-day cal-empty" style="min-height:70px;border-color:var(--border)!important;background:var(--surface-2)!important;cursor:default;pointer-events:auto"></div>
+        </div>
+      </div>
 
-  <!-- Quick add expense (existing functionality retained) -->
+      <!-- Right: daily detail panel -->
+      <div class="cal-detail-panel">
+        <div class="cal-detail-date" id="calendarSelectedDate">Select a date</div>
+        <div class="cal-detail-nums">
+          <div class="cal-detail-num">
+            <div class="cal-detail-num-val" id="calendarDailyTotal">₹0</div>
+            <div class="cal-detail-num-lbl">Today's spending</div>
+          </div>
+          <div class="cal-detail-num">
+            <div class="cal-detail-num-val" id="calendarDailyCount">0</div>
+            <div class="cal-detail-num-lbl">Transactions</div>
+          </div>
+        </div>
+        <div class="cal-txns" id="calendarDailyExpenses" aria-live="polite">
+          <div class="cal-no-txns">
+            <div class="cal-no-txns-icon">📅</div>
+            <div>Select a date to view your expenses.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+  <!-- END PREMIUM EXPENSE CALENDAR -->
+
+  <!-- ── Quick Add Expense ── -->
   <section class="card mb-24">
-    <div class="dashboard-section-head"><div class="section-title">⚡ Quick Add Expense</div><a href="expenses.html" class="btn btn-sm btn-secondary">Full expense manager →</a></div>
+    <div class="dashboard-section-head">
+      <div class="section-title">⚡ Quick Add Expense</div>
+      <a href="expenses.html" class="btn btn-sm btn-secondary">Full expense manager →</a>
+    </div>
     <form id="quickAddForm" class="quick-add-form" novalidate>
       <div class="form-group"><label class="form-label" for="qaTitle">What did you spend on?</label><input id="qaTitle" type="text" class="form-control" placeholder="e.g. Canteen lunch" maxlength="150" required></div>
       <div class="form-group"><label class="form-label" for="qaAmount">Amount (₹)</label><input id="qaAmount" type="number" class="form-control" placeholder="0.00" min="0.01" step="0.01" required></div>
@@ -391,22 +444,26 @@
       <div class="form-group"><label class="form-label" for="qaBtn">&nbsp;</label><button type="submit" class="btn btn-primary" id="qaBtn">Add</button></div>
     </form>
     <div id="qaError" class="auth-message error mt-8" hidden></div>
-    <div class="quick-add-hint">Your expense is saved through your existing expense API and then the dashboard refreshes.</div>
+    <div class="quick-add-hint">Expense is saved instantly and the dashboard refreshes relevant sections only.</div>
   </section>
 
+  <!-- ── Main grid: semester/fees/goals + charts ── -->
   <div class="dash-grid">
     <div style="display:grid;gap:20px;align-content:start">
       <section class="card" id="semesterCard">
         <div class="dashboard-section-head"><div class="section-title">📅 Active Semester</div><a href="semesters.html" class="btn btn-sm btn-secondary">View semesters →</a></div>
-        <div id="semesterContent"><div class="empty-inline">Loading semester…</div></div>
+        <div id="semesterContent"><span class="skel skel-line w-80"></span><span class="skel skel-line w-60" style="margin-top:8px"></span></div>
       </section>
       <section class="card">
         <div class="dashboard-section-head"><div class="section-title">🏫 College Fees Due</div><a href="college-fees.html" class="btn btn-sm btn-secondary">View all →</a></div>
-        <div id="upcomingFees"><div class="empty-inline">Loading fees…</div></div>
+        <div id="upcomingFees"><span class="skel skel-line w-80"></span><span class="skel skel-line w-60" style="margin-top:8px"></span></div>
       </section>
       <section class="card">
         <div class="dashboard-section-head"><div class="section-title">🏦 Savings Goals</div><a href="savings-goals.html" class="btn btn-sm btn-secondary">View all →</a></div>
-        <div class="goal-mini-grid" id="goalGrid"><div class="empty-inline" style="grid-column:1/-1">Loading goals…</div></div>
+        <div class="goal-mini-grid" id="goalGrid">
+          <div class="goal-mini-card"><span class="skel skel-line w-80"></span><span class="skel skel-line w-60" style="margin-top:8px"></span></div>
+          <div class="goal-mini-card"><span class="skel skel-line w-80"></span><span class="skel skel-line w-60" style="margin-top:8px"></span></div>
+        </div>
       </section>
     </div>
     <div style="display:grid;gap:20px;align-content:start">
@@ -423,19 +480,31 @@
     </div>
   </div>
 
+  <!-- ── Recent Expenses + Income ── -->
   <div class="dash-grid mt-16">
     <section class="card">
       <div class="dashboard-section-head"><div class="section-title">🕑 Recent Expenses</div><a href="expenses.html" class="btn btn-sm btn-secondary">View all →</a></div>
-      <div id="recentExpenses"><div class="empty-inline">Loading expenses…</div></div>
+      <div id="recentExpenses">
+        <div class="list-items">
+          <div class="list-item" style="pointer-events:none"><div class="list-item-icon"><span class="skel" style="width:36px;height:36px;border-radius:50%;display:block"></span></div><div class="list-item-body"><span class="skel skel-line w-80"></span><span class="skel skel-line h-sm w-60"></span></div><div class="list-item-right"><span class="skel skel-line w-30" style="min-width:60px"></span></div></div>
+          <div class="list-item" style="pointer-events:none"><div class="list-item-icon"><span class="skel" style="width:36px;height:36px;border-radius:50%;display:block"></span></div><div class="list-item-body"><span class="skel skel-line w-80"></span><span class="skel skel-line h-sm w-60"></span></div><div class="list-item-right"><span class="skel skel-line w-30" style="min-width:60px"></span></div></div>
+          <div class="list-item" style="pointer-events:none"><div class="list-item-icon"><span class="skel" style="width:36px;height:36px;border-radius:50%;display:block"></span></div><div class="list-item-body"><span class="skel skel-line w-80"></span><span class="skel skel-line h-sm w-60"></span></div><div class="list-item-right"><span class="skel skel-line w-30" style="min-width:60px"></span></div></div>
+        </div>
+      </div>
     </section>
     <section class="card">
       <div class="dashboard-section-head"><div class="section-title">💵 Recent Income</div><a href="income.html" class="btn btn-sm btn-secondary">View all →</a></div>
-      <div id="recentIncome"><div class="empty-inline">Loading income…</div></div>
+      <div id="recentIncome">
+        <div class="list-items">
+          <div class="list-item" style="pointer-events:none"><div class="list-item-icon"><span class="skel" style="width:36px;height:36px;border-radius:50%;display:block"></span></div><div class="list-item-body"><span class="skel skel-line w-80"></span><span class="skel skel-line h-sm w-60"></span></div><div class="list-item-right"><span class="skel skel-line w-30" style="min-width:60px"></span></div></div>
+          <div class="list-item" style="pointer-events:none"><div class="list-item-icon"><span class="skel" style="width:36px;height:36px;border-radius:50%;display:block"></span></div><div class="list-item-body"><span class="skel skel-line w-80"></span><span class="skel skel-line h-sm w-60"></span></div><div class="list-item-right"><span class="skel skel-line w-30" style="min-width:60px"></span></div></div>
+        </div>
+      </div>
     </section>
   </div>
 </main>
 
-<!-- Shared confirmation modal retained for common.js compatibility -->
+<!-- Shared confirmation modal -->
 <div id="confirmModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
   <div class="modal">
     <div class="modal-body" style="text-align:center;padding:32px 24px"><div style="font-size:3rem;margin-bottom:16px">⚠️</div><div id="confirmTitle" style="font-size:1.1rem;font-weight:700;margin-bottom:8px"></div><div id="confirmBody" style="color:var(--muted);font-size:.95rem"></div></div>
@@ -449,87 +518,98 @@
 (function () {
   'use strict';
 
+  /* ═══════════════════════════════════════════════════════
+     HELPERS
+     ═══════════════════════════════════════════════════════ */
   if (typeof initTheme === 'function') initTheme();
 
-  const $ = id => document.getElementById(id);
-  const chartColors = ['#6366f1','#8b5cf6','#06b6d4','#22c55e','#f59e0b','#ef4444','#ec4899','#14b8a6','#f97316'];
-  const charts = { group: null, trend: null };
-  let categories = [];
-  let dashboardData = null;
+  const $  = id => document.getElementById(id);
+  const esc = v => String(v ?? '').replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-// Expense Calendar State
-let calendarMonth = new Date(
-  new Date().getFullYear(),
-  new Date().getMonth(),
-  1
-);
+  const numeric = v => {
+    if (typeof v === 'string') v = v.replace(/[₹,\s]/g, '');
+    const n = Number(v); return Number.isFinite(n) ? n : 0;
+  };
+  const safeMoney = v =>
+    typeof money === 'function'
+      ? money(numeric(v))
+      : '₹' + numeric(v).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+  const signedMoney = v =>
+    numeric(v) < 0 ? '-' + safeMoney(Math.abs(numeric(v))) : safeMoney(v);
 
-let selectedCalendarDate = localTodayISO();
-
-
+  const localTodayISO = () => {
+    const d = new Date();
+    return d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
+  };
   const currentMonthKey = () => {
     const d = new Date();
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
   };
-  const localTodayISO = () => {
-    const d = new Date();
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  };
-  const toDateString = value => {
-    if (!value) return '';
-    if (value instanceof Date && !Number.isNaN(value.getTime())) return value.getFullYear() + '-' + String(value.getMonth()+1).padStart(2,'0') + '-' + String(value.getDate()).padStart(2,'0');
-    const s = String(value).trim();
+  const toDateString = v => {
+    if (!v) return '';
+    if (v instanceof Date && !isNaN(v)) return v.toISOString().slice(0, 10);
+    const s = String(v).trim();
     const m = s.match(/^(\d{4}-\d{2}-\d{2})/);
     if (m) return m[1];
-    const parsed = new Date(s);
-    if (Number.isNaN(parsed.getTime())) return '';
-    return parsed.getFullYear() + '-' + String(parsed.getMonth()+1).padStart(2,'0') + '-' + String(parsed.getDate()).padStart(2,'0');
+    const p = new Date(s);
+    return isNaN(p) ? '' : p.toISOString().slice(0, 10);
   };
-  const numeric = value => {
-    if (typeof value === 'string') value = value.replace(/[₹,\s]/g, '');
-    const n = Number(value);
-    return Number.isFinite(n) ? n : 0;
+  const niceDate = v => {
+    const s = toDateString(v);
+    if (!s) return '—';
+    const [y, mo, d] = s.split('-').map(Number);
+    return new Date(y, mo - 1, d).toLocaleDateString('en-IN',
+      { day: 'numeric', month: 'short', year: 'numeric' });
   };
-  const amountSum = (arr, field) => arr.reduce((total, row) => total + numeric(row[field]), 0);
-  const safeMoney = value => typeof money === 'function' ? money(numeric(value)) : '₹' + numeric(value).toLocaleString('en-IN', {maximumFractionDigits:2});
-  const signedMoney = value => numeric(value) < 0 ? '-' + safeMoney(Math.abs(numeric(value))) : safeMoney(value);
-  const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-  const niceDate = value => {
-    const s = toDateString(value);
-    if (!s) return 'Date not available';
-    const [y,m,d] = s.split('-').map(Number);
-    return new Date(y,m-1,d).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+  const shortDate = v => {
+    const s = toDateString(v);
+    if (!s) return '—';
+    const [y, mo, d] = s.split('-').map(Number);
+    return new Date(y, mo - 1, d).toLocaleDateString('en-IN',
+      { day: 'numeric', month: 'short' });
   };
   const barClass = pct => pct >= 100 ? 'danger' : pct >= 80 ? 'warning' : 'success';
-  const arrayFrom = (value, candidates) => {
-    if (Array.isArray(value)) return value;
-    if (!value || typeof value !== 'object') return [];
-    for (const key of candidates || ['items','data','results','expenses','income','fees','goals','scholarships','categories']) {
-      if (Array.isArray(value[key])) return value[key];
+  const arrayFrom = (v, cands) => {
+    if (Array.isArray(v)) return v;
+    if (!v || typeof v !== 'object') return [];
+    for (const k of (cands || ['items','data','results','expenses','income',
+        'fees','goals','scholarships','categories'])) {
+      if (Array.isArray(v[k])) return v[k];
     }
     return [];
   };
+  const monthRecords = (arr, mk) =>
+    arr.filter(r => r.date && r.date.slice(0, 7) === mk);
+  const amountSum = (arr, f) =>
+    arr.reduce((t, r) => t + numeric(r[f]), 0);
+
+  /* ── Normalizers ─────────────────────────────────────── */
   const groupName = row => {
-    let value = row?.category_group ?? row?.group ?? row?.group_name ?? row?.grp ?? row?.category?.group ?? '';
-    if (typeof value === 'object' && value) value = value.name ?? value.group ?? value.label ?? '';
-    if (!value) {
+    let v = row?.category_group ?? row?.group ?? row?.group_name ?? row?.grp
+            ?? row?.category?.group ?? '';
+    if (typeof v === 'object' && v) v = v.name ?? v.group ?? v.label ?? '';
+    if (!v) {
       const cat = String(row?.category ?? row?.category_name ?? '').trim().toLowerCase();
-      const aliases = {'canteen':'Food','food':'Food','groceries':'Food','mobile recharge':'Bills','mobile':'Bills','bus & auto':'Transport','transport':'Transport','exam fees':'College','college':'College','books':'College'};
-      value = aliases[cat] || row?.category || row?.category_name || 'Other';
+      const aliases = { canteen:'Food',food:'Food',groceries:'Food',
+        'mobile recharge':'Bills',mobile:'Bills','bus & auto':'Transport',
+        transport:'Transport','exam fees':'College',college:'College',books:'College' };
+      v = aliases[cat] || row?.category || row?.category_name || 'Other';
     }
-    const cleaned = String(value || 'Other').trim();
-    const canonical = {
-      'food':'Food', 'shopping':'Shopping', 'college':'College', 'education':'College',
-      'transport':'Transport', 'transportation':'Transport', 'living':'Living',
-      'bills':'Bills', 'fun':'Fun', 'entertainment':'Fun', 'health':'Health', 'other':'Other'
-    };
-    return canonical[cleaned.toLowerCase()] || cleaned;
+    const cleaned = String(v || 'Other').trim();
+    const canon = { food:'Food',shopping:'Shopping',college:'College',education:'College',
+      transport:'Transport',transportation:'Transport',living:'Living',bills:'Bills',
+      fun:'Fun',entertainment:'Fun',health:'Health',other:'Other' };
+    return canon[cleaned.toLowerCase()] || cleaned;
   };
   const normalizeExpense = row => ({
     ...row,
     amount: numeric(row?.amount ?? row?.total_amount ?? row?.expense_amount),
     date: toDateString(row?.date ?? row?.expense_date ?? row?.transaction_date ?? row?.created_at),
-    category: String(row?.category_name ?? (typeof row?.category === 'string' ? row.category : row?.category?.name) ?? row?.title_category ?? groupName(row)),
+    category: String(row?.category_name ?? (typeof row?.category === 'string'
+      ? row.category : row?.category?.name) ?? row?.title_category ?? groupName(row)),
     group: groupName(row),
     title: String(row?.title ?? row?.description ?? 'Expense'),
     icon: row?.icon || '💳'
@@ -537,547 +617,927 @@ let selectedCalendarDate = localTodayISO();
   const normalizeIncome = row => ({
     ...row,
     amount: numeric(row?.amount ?? row?.total_amount ?? row?.income_amount),
-    date: toDateString(row?.date ?? row?.income_date ?? row?.received_date ?? row?.transaction_date ?? row?.created_at),
+    date: toDateString(row?.date ?? row?.income_date ?? row?.received_date
+          ?? row?.transaction_date ?? row?.created_at),
     source: String(row?.source ?? row?.title ?? row?.income_source ?? row?.description ?? 'Income')
   });
   const normalizeFee = row => {
     const total = numeric(row?.total_amount ?? row?.amount ?? row?.fee_amount);
-    const paid = numeric(row?.paid ?? row?.paid_amount ?? row?.total_paid);
-    const remaining = row?.remaining != null ? numeric(row.remaining) : Math.max(total - paid, 0);
-    return {...row, fee_title:String(row?.fee_title ?? row?.title ?? row?.fee_name ?? 'College fee'), total_amount:total, paid, remaining, due_date:toDateString(row?.due_date)};
+    const paid  = numeric(row?.paid ?? row?.paid_amount ?? row?.total_paid);
+    const rem   = row?.remaining != null ? numeric(row.remaining) : Math.max(total - paid, 0);
+    return { ...row, fee_title: String(row?.fee_title ?? row?.title ?? row?.fee_name ?? 'College fee'),
+      total_amount: total, paid, remaining: rem, due_date: toDateString(row?.due_date) };
   };
   const normalizeGoal = row => ({
     ...row,
-    goal_title:String(row?.goal_title ?? row?.title ?? row?.name ?? 'Savings goal'),
-    current_saved_amount:numeric(row?.current_saved_amount ?? row?.saved_amount ?? row?.current_amount),
-    target_amount:numeric(row?.target_amount ?? row?.target ?? row?.goal_amount),
-    status:String(row?.status ?? 'Active'),
-    target_date:toDateString(row?.target_date ?? row?.deadline)
+    goal_title: String(row?.goal_title ?? row?.title ?? row?.name ?? 'Savings goal'),
+    current_saved_amount: numeric(row?.current_saved_amount ?? row?.saved_amount ?? row?.current_amount),
+    target_amount: numeric(row?.target_amount ?? row?.target ?? row?.goal_amount),
+    status: String(row?.status ?? 'Active'),
+    target_date: toDateString(row?.target_date ?? row?.deadline)
   });
   const normalizeScholarship = row => ({
     ...row,
-    scholarship_name:String(row?.scholarship_name ?? row?.name ?? row?.title ?? 'Scholarship'),
-    awarded_amount:numeric(row?.awarded_amount ?? row?.amount_awarded ?? row?.amount),
-    total_received:numeric(row?.total_received ?? row?.received_amount ?? row?.amount_received),
-    application_deadline:toDateString(row?.application_deadline ?? row?.deadline)
+    scholarship_name: String(row?.scholarship_name ?? row?.name ?? row?.title ?? 'Scholarship'),
+    awarded_amount: numeric(row?.awarded_amount ?? row?.amount_awarded ?? row?.amount),
+    total_received: numeric(row?.total_received ?? row?.received_amount ?? row?.amount_received),
+    application_deadline: toDateString(row?.application_deadline ?? row?.deadline)
   });
-  const normalizeGroupBudgets = response => {
-    const raw = response?.budgets ?? response?.data ?? response ?? {};
+  const normalizeGroupBudgets = resp => {
+    const raw = resp?.budgets ?? resp?.data ?? resp ?? {};
     const out = {};
     if (Array.isArray(raw)) {
       raw.forEach(item => {
-        const key = String(item?.group ?? item?.group_name ?? item?.category ?? item?.category_name ?? item?.name ?? '').trim();
-        if (key) out[key] = numeric(item?.amount ?? item?.budget_amount ?? item?.budget ?? item?.limit);
+        const k = String(item?.group ?? item?.group_name ?? item?.category
+          ?? item?.category_name ?? item?.name ?? '').trim();
+        if (k) out[k] = numeric(item?.amount ?? item?.budget_amount ?? item?.budget ?? item?.limit);
       });
     } else if (raw && typeof raw === 'object') {
-      Object.entries(raw).forEach(([key,value]) => {
-        const amount = value && typeof value === 'object' ? (value.amount ?? value.budget_amount ?? value.budget ?? value.limit) : value;
-        out[key] = numeric(amount);
+      Object.entries(raw).forEach(([k, val]) => {
+        const a = val && typeof val === 'object'
+          ? (val.amount ?? val.budget_amount ?? val.budget ?? val.limit) : val;
+        out[k] = numeric(a);
       });
     }
     return out;
   };
-  const monthRecords = (records, month) => records.filter(r => r.date && r.date.slice(0,7) === month);
   const daysUntil = date => {
     const s = toDateString(date);
     if (!s) return 99999;
-    const [y,m,d] = s.split('-').map(Number);
-    const due = new Date(y,m-1,d); due.setHours(0,0,0,0);
-    const now = new Date(); now.setHours(0,0,0,0);
+    const [y, m, d] = s.split('-').map(Number);
+    const due = new Date(y, m - 1, d); due.setHours(0, 0, 0, 0);
+    const now = new Date(); now.setHours(0, 0, 0, 0);
     return Math.round((due - now) / 86400000);
   };
 
-  function setDateLabels() {
-    const now = new Date();
-    $('dateLabel').textContent = now.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-    $('monthLabel2').textContent = now.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
-    $('qaDate').value = localTodayISO();
-  }
+  /* ═══════════════════════════════════════════════════════
+     SESSION CACHE (per-user, per-page-session)
+     ═══════════════════════════════════════════════════════ */
+  const _cache = new Map();
+  const TTL = { dash: 60_000, tx: 90_000, cat: 300_000, opt: 120_000 };
 
-  async function loadCategories() {
-    const select = $('qaCategory');
+  async function cachedGet(path, ttl = TTL.tx) {
+    const now = Date.now();
+    const hit = _cache.get(path);
+    if (hit && now - hit.ts < ttl) return hit.data;
+    const data = await API_CLIENT.get(path);
+    _cache.set(path, { data, ts: now });
+    return data;
+  }
+  function invalidate(...paths) { paths.forEach(p => _cache.delete(p)); }
+
+  /* ═══════════════════════════════════════════════════════
+     APPLICATION STATE
+     ═══════════════════════════════════════════════════════ */
+  const S = {
+    dashboard: null, budget: null, groupBudgets: null,
+    expenses: null, income: null, categories: [],
+    fees: null, goals: null, scholarships: null, reminders: null
+  };
+  const charts = { group: null, trend: null };
+  const chartColors = ['#6366f1','#8b5cf6','#06b6d4','#22c55e',
+    '#f59e0b','#ef4444','#ec4899','#14b8a6','#f97316'];
+
+  /* ═══════════════════════════════════════════════════════
+     CALENDAR STATE
+     ═══════════════════════════════════════════════════════ */
+  let calMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  let calSelected = localTodayISO();
+
+  /* ═══════════════════════════════════════════════════════
+     SECTION LOADER — fires callback independently
+     ═══════════════════════════════════════════════════════ */
+  async function loadSection(path, ttl, onOk, onErr) {
     try {
-      const response = await API_CLIENT.get('/categories');
-      categories = arrayFrom(response, ['categories','items','data','results']).map(c => ({
-        id:c.id,
-        name:String(c.name ?? c.category_name ?? 'Category'),
-        group:String(c.group ?? c.grp ?? c.category_group ?? c.group_name ?? 'Other'),
-        icon:c.icon || '📌'
-      })).filter(c => c.id != null);
-      select.innerHTML = '<option value="">Select category…</option>';
-      const groups = {};
-      categories.forEach(c => (groups[c.group] ||= []).push(c));
-      Object.keys(groups).sort((a,b)=>a.localeCompare(b)).forEach(group => {
-        const optgroup = document.createElement('optgroup'); optgroup.label = group;
-        groups[group].sort((a,b)=>a.name.localeCompare(b.name)).forEach(c => {
-          const option = document.createElement('option'); option.value = c.id; option.textContent = c.icon + ' ' + c.name; optgroup.appendChild(option);
-        });
-        select.appendChild(optgroup);
-      });
-      if (!categories.length) select.innerHTML = '<option value="">No categories available</option>';
-    } catch (error) {
-      console.error('Dashboard categories API failed:', error);
-      select.innerHTML = '<option value="">Categories unavailable</option>';
+      const data = await cachedGet(path, ttl);
+      onOk(data);
+    } catch (err) {
+      console.warn('[dashboard] section failed:', path, err?.message || err);
+      if (onErr) onErr(err);
     }
   }
 
-  async function getOptional(endpoint, key) {
-    try { return {ok:true, value:await API_CLIENT.get(endpoint), key}; }
-    catch (error) { console.warn('Dashboard API failed:', endpoint, error); return {ok:false, value:null, key, error}; }
+  function sectionError(containerId, retryFn, msg) {
+    const el = $(containerId);
+    if (!el) return;
+    el.innerHTML = `<div class="sec-err">
+      <div class="sec-err-icon">⚠️</div>
+      <div>${esc(msg || 'Could not load this section.')}</div>
+      <button class="btn-retry" type="button">↺ Retry</button>
+    </div>`;
+    if (retryFn) el.querySelector('.btn-retry')
+      ?.addEventListener('click', retryFn, { once: true });
   }
 
-  async function loadAll() {
-    const definitions = [
-      ['dashboard','/dashboard'],['budget','/budget'],['groupBudgets','/group-budgets'],
-      // /expenses with no ?all=true returns last 6 months — enough for dashboard charts,
-      // calendar, recent expenses and all summaries. The full Expenses page uses ?all=true.
-      ['expenses','/expenses'],['income','/income'],['fees','/fees'],['goals','/savings-goals'],
-      ['scholarships','/scholarships'],['reminders','/reminders']
-    ];
-    const results = await Promise.all(definitions.map(([key,url]) => getOptional(url,key)));
-    const data = {}; const failed = [];
-    results.forEach(result => { if (result.ok) data[result.key] = result.value; else failed.push(result.key); });
+  /* ═══════════════════════════════════════════════════════
+     STAT CARDS (from /dashboard aggregate)
+     ═══════════════════════════════════════════════════════ */
+  function renderStatCards(dash) {
+    if (!dash) return;
+    const bal   = numeric(dash.balance ?? 0);
+    const minc  = numeric(dash.month_income ?? 0);
+    const mexp  = numeric(dash.month_expenses ?? 0);
+    const bud   = numeric(dash.monthly_budget ?? 0);
+    const left  = bud > 0 ? bud - mexp : null;
+    const tinc  = numeric(dash.total_income ?? 0);
+    const texp  = numeric(dash.total_expenses ?? 0);
 
-    const dashboardRaw = data.dashboard?.dashboard ?? data.dashboard?.data ?? data.dashboard ?? {};
-    const expenses = arrayFrom(data.expenses, ['expenses','items','data','results']).map(normalizeExpense);
-    const income = arrayFrom(data.income, ['income','items','data','results','incomes']).map(normalizeIncome);
-    const fees = arrayFrom(data.fees, ['fees','items','data','results']).map(normalizeFee);
-    const goals = arrayFrom(data.goals, ['goals','items','data','results']).map(normalizeGoal);
-    const scholarships = arrayFrom(data.scholarships, ['scholarships','items','data','results']).map(normalizeScholarship);
-    data.dashboard = dashboardRaw && typeof dashboardRaw === 'object' ? dashboardRaw : {};
-    data.expenses = expenses;
-    data.income = income;
-    data.fees = fees;
-    data.goals = goals;
-    data.scholarships = scholarships;
-    data.groupBudgets = normalizeGroupBudgets(data.groupBudgets);
-    data.budget = data.budget?.budget ?? data.budget?.data ?? data.budget ?? {};
-    data.reminders = data.reminders?.reminders ?? data.reminders?.data ?? data.reminders ?? null;
-    dashboardData = data;
-
-    const warning = $('dashboardLoadWarning');
-    if (failed.length) {
-      warning.textContent = 'Some dashboard sections could not load (' + failed.join(', ') + '). Available sections are still shown. Check the Flask terminal or Network tab for failed API requests.';
-      warning.hidden = false;
-    } else {
-      warning.hidden = true;
-    }
-    renderDashboard(data);
+    $('statBalance').textContent = signedMoney(bal);
+    $('statBalanceSub').textContent = safeMoney(tinc) + ' income − ' + safeMoney(texp) + ' expenses';
+    $('statMonthIncome').textContent = safeMoney(minc);
+    $('monthLabel2').textContent = new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+    $('statMonthExp').textContent = safeMoney(mexp);
+    // Count from local expenses if available
+    const mk = currentMonthKey();
+    const mexpArr = S.expenses ? monthRecords(S.expenses, mk) : [];
+    $('statMonthExpSub').textContent = mexpArr.length
+      ? mexpArr.length + ' transaction' + (mexpArr.length === 1 ? '' : 's')
+      : '';
+    $('statBudgetLeft').textContent = left !== null ? signedMoney(left) : '—';
+    $('budgetLeftSub').textContent  = left !== null
+      ? (left >= 0 ? 'of ' + safeMoney(bud) + ' total' : 'Over budget by ' + safeMoney(-left))
+      : 'No budget set';
   }
 
-  function renderDashboard(data) {
-    const month = currentMonthKey();
-    const expenses = data.expenses;
-    const income = data.income;
-    const monthExpenses = monthRecords(expenses, month);
-    const monthIncomeRecords = monthRecords(income, month);
-    const spent = amountSum(monthExpenses,'amount');
-    const monthIncome = amountSum(monthIncomeRecords,'amount');
-    const totalExpenses = amountSum(expenses,'amount');
-    const totalIncome = amountSum(income,'amount');
-    const balance = data.dashboard.balance != null ? numeric(data.dashboard.balance) : totalIncome - totalExpenses;
-    const budget = numeric(data.budget.amount ?? data.budget.monthly_budget ?? data.budget.budget_amount ?? data.dashboard.monthly_budget ?? 0);
-
-    $('statBalance').textContent = signedMoney(balance);
-    $('statBalanceSub').textContent = safeMoney(totalIncome) + ' income − ' + safeMoney(totalExpenses) + ' expenses';
-    $('statMonthIncome').textContent = safeMoney(monthIncome);
-    $('statMonthExp').textContent = safeMoney(spent);
-    $('statMonthExpSub').textContent = monthExpenses.length + ' transaction' + (monthExpenses.length === 1 ? '' : 's');
-    renderBudget(budget,spent,data.groupBudgets,monthExpenses);
-    renderAlerts(data.reminders);
-    renderGlance({data,monthExpenses,monthIncomeRecords,spent,monthIncome});
-    renderSemester(data.dashboard.active_semester ?? data.dashboard.semester ?? null);
-    renderFees(data.fees);
-    renderGoals(data.goals);
-    renderRecentExpenses([...expenses].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5));
-    renderRecentIncome([...income].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5));
-    renderExpenseCalendar(expenses);
-    renderCharts();
+  /* ═══════════════════════════════════════════════════════
+     BUDGET SECTION — tries to render when enough data exists
+     ═══════════════════════════════════════════════════════ */
+  function tryRenderBudget() {
+    if (!S.dashboard) return;         // need at minimum dashboard for month_expenses
+    const spent      = numeric(S.dashboard.month_expenses ?? 0);
+    const budgetAmt  = S.budget
+      ? numeric(S.budget.amount ?? S.budget.monthly_budget ?? S.budget.budget_amount ?? 0)
+      : numeric(S.dashboard.monthly_budget ?? 0);
+    const groupBudg  = S.groupBudgets || {};
+    const mk         = currentMonthKey();
+    const monthExp   = S.expenses ? monthRecords(S.expenses, mk) : [];
+    renderBudget(budgetAmt, spent, groupBudg, monthExp);
   }
-
-// ==============================================
-// INTERACTIVE EXPENSE CALENDAR
-// Uses existing dashboard expense records.
-// No additional API requests.
-// ==============================================
-
-function calendarDateKey(year, month, day) {
-  return (
-    year + "-" +
-    String(month + 1).padStart(2, "0") + "-" +
-    String(day).padStart(2, "0")
-  );
-}
-
-function renderExpenseCalendar(records) {
-  records = Array.isArray(records) ? records : [];
-
-  const year = calendarMonth.getFullYear();
-  const month = calendarMonth.getMonth();
-  const monthKey = year + "-" + String(month + 1).padStart(2, "0");
-
-  const firstDay = new Date(year, month, 1).getDay();
-  const totalDays = new Date(year, month + 1, 0).getDate();
-
-  const monthRecords = records.filter(
-    expense => expense.date && expense.date.slice(0, 7) === monthKey
-  );
-
-  const monthlyTotal = amountSum(monthRecords, "amount");
-
-  $("expenseCalendarMonth").textContent =
-    calendarMonth.toLocaleDateString("en-IN", {
-      month: "long",
-      year: "numeric"
-    });
-
-  $("calendarMonthlyTotal").textContent =
-    safeMoney(monthlyTotal);
-
-  $("calendarMonthlyCount").textContent =
-    monthRecords.length.toLocaleString("en-IN");
-
-  const dailyTotals = new Map();
-
-  monthRecords.forEach(expense => {
-    const date = expense.date;
-    const existing = dailyTotals.get(date) || {
-      total: 0,
-      count: 0
-    };
-
-    existing.total += numeric(expense.amount);
-    existing.count += 1;
-
-    dailyTotals.set(date, existing);
-  });
-
-  let html = "";
-
-  ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-    .forEach(day => {
-      html += `<div class="exp-calendar-weekday">${day}</div>`;
-    });
-
-  for (let i = 0; i < firstDay; i++) {
-    html += `<div class="exp-calendar-empty"></div>`;
-  }
-
-  for (let day = 1; day <= totalDays; day++) {
-    const dateKey = calendarDateKey(year, month, day);
-    const data = dailyTotals.get(dateKey);
-
-    const isSelected = selectedCalendarDate === dateKey;
-    const isToday = localTodayISO() === dateKey;
-
-    const classes = [
-      "exp-calendar-day",
-      data ? "has-expenses" : "",
-      isSelected ? "selected" : "",
-      isToday ? "today" : ""
-    ].filter(Boolean).join(" ");
-
-    const amountLabel = data
-      ? "₹" + data.total.toLocaleString("en-IN", {
-          maximumFractionDigits: 0
-        })
-      : "";
-
-    html += `
-      <button type="button"
-              class="${classes}"
-              data-calendar-date="${dateKey}"
-              aria-pressed="${isSelected}"
-              aria-label="${dateKey}, ${data ? data.count + " expenses, " + safeMoney(data.total) : "No expenses"}">
-
-        <span class="day-number">${day}</span>
-
-        <span class="day-amount">${amountLabel}</span>
-
-      </button>
-    `;
-  }
-
-  $("expenseCalendarGrid").innerHTML = html;
-
-  renderSelectedCalendarDay(records);
-}
-
-function renderSelectedCalendarDay(records) {
-  const selected = records.filter(
-    expense => expense.date === selectedCalendarDate
-  );
-
-  const total = amountSum(selected, "amount");
-
-  $("calendarSelectedDate").textContent = niceDate(
-    selectedCalendarDate
-  );
-
-  $("calendarDailyTotal").textContent = safeMoney(total);
-
-  $("calendarDailyCount").textContent =
-    selected.length.toLocaleString("en-IN");
-
-  if (!selected.length) {
-    $("calendarDailyExpenses").innerHTML = `
-      <div class="empty-inline">
-        No expenses recorded on this date.
-      </div>
-    `;
-    return;
-  }
-
-  $("calendarDailyExpenses").innerHTML = selected.map(expense => `
-    <div class="exp-calendar-record">
-
-      <div style="min-width:0">
-        <div class="exp-calendar-record-title">
-          ${esc(expense.icon || "💳")} ${esc(expense.title)}
-        </div>
-
-        <div class="exp-calendar-record-sub">
-          ${esc(expense.category || expense.group || "Other")}
-        </div>
-      </div>
-
-      <div class="exp-calendar-record-amount">
-        ${safeMoney(expense.amount)}
-      </div>
-
-    </div>
-  `).join("");
-}
-
-function moveExpenseCalendar(direction) {
-  const year = calendarMonth.getFullYear();
-  const month = calendarMonth.getMonth();
-
-  const newMonth = new Date(year, month + direction, 1);
-  const newYear = newMonth.getFullYear();
-  const newMonthNumber = newMonth.getMonth();
-
-  const lastDay = new Date(
-    newYear,
-    newMonthNumber + 1,
-    0
-  ).getDate();
-
-  const oldDay = Number(selectedCalendarDate.slice(-2)) || 1;
-  const newDay = Math.min(oldDay, lastDay);
-
-  calendarMonth = newMonth;
-
-  selectedCalendarDate = calendarDateKey(
-    newYear,
-    newMonthNumber,
-    newDay
-  );
-
-  renderExpenseCalendar(dashboardData?.expenses || []);
-}
-
-function resetExpenseCalendarToday() {
-  calendarMonth = new Date(
-    new Date().getFullYear(),
-    new Date().getMonth(),
-    1
-  );
-
-  selectedCalendarDate = localTodayISO();
-
-  renderExpenseCalendar(dashboardData?.expenses || []);
-}
-
 
   function renderBudget(budget, spent, groupBudgets, monthExpenses) {
-    const left = budget - spent;
-    const pct = budget > 0 ? spent / budget * 100 : 0;
-    const hasBudget = budget > 0;
-    $('bTotal').textContent = hasBudget ? safeMoney(budget) : 'Not set';
-    $('bSpent').textContent = safeMoney(spent);
-    $('bLeft').textContent = hasBudget ? signedMoney(left) : '—';
-    $('bLeft').className = 'budget-num-val' + (left < 0 ? ' negative-text' : '');
-    $('bBar').className = 'progress-fill ' + barClass(pct);
-    $('bBar').style.width = Math.min(Math.max(pct,0),100) + '%';
-    $('statBudgetLeft').textContent = hasBudget ? signedMoney(left) : '—';
-    $('budgetLeftSub').textContent = hasBudget ? (left >= 0 ? 'of ' + safeMoney(budget) + ' total' : 'Over budget by ' + safeMoney(-left)) : 'No budget set';
+    const left    = budget - spent;
+    const pct     = budget > 0 ? spent / budget * 100 : 0;
+    const hasBudg = budget > 0;
+
+    // Show real content, hide skeleton
+    $('budgetSkeleton').hidden = true;
+    $('budgetReal').hidden = false;
+
+    $('bTotal').textContent   = hasBudg ? safeMoney(budget) : 'Not set';
+    $('bSpent').textContent   = safeMoney(spent);
+    $('bLeft').textContent    = hasBudg ? signedMoney(left) : '—';
+    $('bLeft').className      = 'budget-num-val' + (left < 0 ? ' negative-text' : '');
+    $('bBar').className       = 'progress-fill ' + barClass(pct);
+    $('bBar').style.width     = Math.min(Math.max(pct, 0), 100) + '%';
+
+    // Stat card budget remaining
+    $('statBudgetLeft').textContent = hasBudg ? signedMoney(left) : '—';
+    $('budgetLeftSub').textContent  = hasBudg
+      ? (left >= 0 ? 'of ' + safeMoney(budget) + ' total' : 'Over budget by ' + safeMoney(-left))
+      : 'No budget set';
+
     const badge = $('budgetBadge');
-    if (!hasBudget) { badge.className='badge badge-muted'; badge.textContent='Not set'; }
-    else if (pct >= 100) { badge.className='badge badge-danger'; badge.textContent='Limit reached'; }
-    else if (pct >= 80) { badge.className='badge badge-warning'; badge.textContent=pct.toFixed(0)+'% used — slow down'; }
-    else { badge.className='badge badge-success'; badge.textContent='On track · '+pct.toFixed(0)+'% used'; }
-    if (!hasBudget) $('bNote').innerHTML = 'Set a monthly budget to track your remaining money. <a href="budgets.html" class="text-primary">Set budget →</a>';
-    else if (left <= 0) $('bNote').textContent = 'You have reached or exceeded your monthly budget.';
-    else {
-      const now = new Date(); const remainingDays = new Date(now.getFullYear(),now.getMonth()+1,0).getDate()-now.getDate()+1;
-      $('bNote').textContent = 'About ' + safeMoney(left / remainingDays) + ' per day for the remaining ' + remainingDays + ' day' + (remainingDays===1?'':'s') + ' of this month.';
+    if (!hasBudg)      { badge.className = 'badge badge-muted';    badge.textContent = 'Not set'; }
+    else if (pct >= 100) { badge.className = 'badge badge-danger';   badge.textContent = 'Limit reached'; }
+    else if (pct >= 80)  { badge.className = 'badge badge-warning';  badge.textContent = pct.toFixed(0) + '% used — slow down'; }
+    else                 { badge.className = 'badge badge-success';  badge.textContent = 'On track · ' + pct.toFixed(0) + '% used'; }
+
+    if (!hasBudg) {
+      $('bNote').innerHTML = 'Set a monthly budget to track your remaining money. '
+        + '<a href="budgets.html" class="text-primary">Set budget →</a>';
+    } else if (left <= 0) {
+      $('bNote').textContent = 'You have reached or exceeded your monthly budget.';
+    } else {
+      const now = new Date();
+      const remDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate() + 1;
+      $('bNote').textContent = 'About ' + safeMoney(left / remDays) + ' per day for the remaining '
+        + remDays + ' day' + (remDays === 1 ? '' : 's') + ' of this month.';
     }
 
     const byGroup = {};
-    monthExpenses.forEach(e => { const key = e.group || 'Other'; byGroup[key] = (byGroup[key] || 0) + numeric(e.amount); });
-    const limits = Object.entries(groupBudgets || {}).filter(([,limit]) => numeric(limit) > 0).sort((a,b)=>a[0].localeCompare(b[0]));
-    $('groupBudgets').innerHTML = limits.length ? '<div style="margin-top:16px;font-weight:700;font-size:.9rem">Category limits</div>' + limits.map(([group,limit]) => {
-      const used = byGroup[group] || 0; const p = used / numeric(limit) * 100;
-      return '<div class="gb-row"><div class="gb-head"><span>' + esc(group) + '</span><span>' + safeMoney(used) + ' / ' + safeMoney(limit) + ' · <strong>' + (used >= numeric(limit) ? '100% used' : safeMoney(numeric(limit)-used) + ' left') + '</strong></span></div><div class="progress-track progress-sm"><div class="progress-fill ' + barClass(p) + '" style="width:' + Math.min(Math.max(p,0),100) + '%"></div></div></div>';
-    }).join('') : '<div class="empty-inline">No category limits yet. <a href="/pages/budgets.html" class="text-primary">Set category budgets →</a></div>';
+    monthExpenses.forEach(e => {
+      const k = e.group || 'Other';
+      byGroup[k] = (byGroup[k] || 0) + numeric(e.amount);
+    });
+    const limits = Object.entries(groupBudgets || {})
+      .filter(([, lim]) => numeric(lim) > 0)
+      .sort((a, b) => a[0].localeCompare(b[0]));
+
+    $('groupBudgets').innerHTML = limits.length
+      ? '<div style="margin-top:16px;font-weight:700;font-size:.9rem">Category limits</div>'
+        + limits.map(([grp, lim]) => {
+          const used = byGroup[grp] || 0;
+          const p = used / numeric(lim) * 100;
+          return '<div class="gb-row"><div class="gb-head"><span>' + esc(grp) + '</span>'
+            + '<span>' + safeMoney(used) + ' / ' + safeMoney(lim)
+            + ' · <strong>' + (used >= numeric(lim) ? '100% used' : safeMoney(numeric(lim) - used) + ' left')
+            + '</strong></span></div>'
+            + '<div class="progress-track progress-sm"><div class="progress-fill ' + barClass(p)
+            + '" style="width:' + Math.min(Math.max(p, 0), 100) + '%"></div></div></div>';
+        }).join('')
+      : '<div class="empty-inline">No category limits yet. '
+        + '<a href="/pages/budgets.html" class="text-primary">Set category budgets →</a></div>';
   }
 
+  /* ═══════════════════════════════════════════════════════
+     ALERTS BANNER
+     ═══════════════════════════════════════════════════════ */
   function renderAlerts(reminders) {
     const box = $('alertBanner');
-    if (!reminders || typeof reminders !== 'object') { box.hidden=true; return; }
-    const overdue = Array.isArray(reminders.overdue_fees) ? reminders.overdue_fees : [];
-    const due = Array.isArray(reminders.fees_due_7_days) ? reminders.fees_due_7_days : [];
-    const scholarships = Array.isArray(reminders.upcoming_scholarship_deadlines) ? reminders.upcoming_scholarship_deadlines : [];
-    const goals = Array.isArray(reminders.upcoming_goal_deadlines) ? reminders.upcoming_goal_deadlines : [];
-    const lines = [];
-    overdue.forEach(f=>lines.push('<li><strong class="text-danger">Overdue fee:</strong> '+esc(f.fee_title||f.title)+' — '+safeMoney(f.remaining)+' (due '+niceDate(f.due_date)+')</li>'));
-    due.forEach(f=>lines.push('<li><strong>Fee due soon:</strong> '+esc(f.fee_title||f.title)+' — '+safeMoney(f.remaining)+' on '+niceDate(f.due_date)+'</li>'));
-    scholarships.forEach(s=>lines.push('<li><strong>Scholarship deadline:</strong> '+esc(s.scholarship_name||s.name)+' — '+niceDate(s.application_deadline||s.deadline)+'</li>'));
-    goals.forEach(g=>lines.push('<li><strong>Goal deadline:</strong> '+esc(g.goal_title||g.title)+' — '+safeMoney(g.current_saved_amount)+' of '+safeMoney(g.target_amount)+' by '+niceDate(g.target_date)+'</li>'));
-    if (!lines.length) { box.hidden=true; return; }
-    box.className='dash-alert '+(overdue.length?'danger':'warning');
-    box.innerHTML='<strong>🔔 '+lines.length+' item'+(lines.length===1?'':'s')+' need your attention</strong><ul>'+lines.join('')+'</ul><a href="reminders.html" class="btn btn-sm btn-secondary mt-8">Open reminders →</a>';
-    box.hidden=false;
+    if (!reminders || typeof reminders !== 'object') { box.hidden = true; return; }
+    const overdue = Array.isArray(reminders.overdue_fees)                   ? reminders.overdue_fees                   : [];
+    const due     = Array.isArray(reminders.fees_due_7_days)                ? reminders.fees_due_7_days                : [];
+    const schol   = Array.isArray(reminders.upcoming_scholarship_deadlines) ? reminders.upcoming_scholarship_deadlines : [];
+    const goals   = Array.isArray(reminders.upcoming_goal_deadlines)        ? reminders.upcoming_goal_deadlines        : [];
+    const lines   = [];
+    overdue.forEach(f => lines.push('<li><strong class="text-danger">Overdue fee:</strong> '
+      + esc(f.fee_title || f.title) + ' — ' + safeMoney(f.remaining) + ' (due ' + niceDate(f.due_date) + ')</li>'));
+    due.forEach(f => lines.push('<li><strong>Fee due soon:</strong> '
+      + esc(f.fee_title || f.title) + ' — ' + safeMoney(f.remaining) + ' on ' + niceDate(f.due_date) + '</li>'));
+    schol.forEach(s => lines.push('<li><strong>Scholarship deadline:</strong> '
+      + esc(s.scholarship_name || s.name) + ' — ' + niceDate(s.application_deadline || s.deadline) + '</li>'));
+    goals.forEach(g => lines.push('<li><strong>Goal deadline:</strong> '
+      + esc(g.goal_title || g.title) + ' — ' + safeMoney(g.current_saved_amount)
+      + ' of ' + safeMoney(g.target_amount) + ' by ' + niceDate(g.target_date) + '</li>'));
+    if (!lines.length) { box.hidden = true; return; }
+    box.className = 'dash-alert ' + (overdue.length ? 'danger' : 'warning');
+    box.innerHTML = '<strong>🔔 ' + lines.length + ' item' + (lines.length === 1 ? '' : 's')
+      + ' need your attention</strong><ul>' + lines.join('') + '</ul>'
+      + '<a href="reminders.html" class="btn btn-sm btn-secondary mt-8">Open reminders →</a>';
+    box.hidden = false;
   }
 
-  function renderGlance(ctx) {
-    const d=ctx.data, fees=d.fees, goals=d.goals, scholarships=d.scholarships, reminders=d.reminders;
-    const pendingFees=fees.filter(f=>numeric(f.remaining)>0);
-    const pendingTotal=amountSum(pendingFees,'remaining');
-    const totalFees=amountSum(fees,'total_amount'), paidFees=amountSum(fees,'paid');
-    const feePct=totalFees>0?paidFees/totalFees*100:0;
-    const activeGoals=goals.filter(g=>String(g.status).toLowerCase()==='active');
-    const saved=amountSum(activeGoals,'current_saved_amount'), target=amountSum(activeGoals,'target_amount');
-    const goalPct=target>0?saved/target*100:0;
-    const awarded=amountSum(scholarships,'awarded_amount'), received=amountSum(scholarships,'total_received');
-    const scholarshipPct=awarded>0?received/awarded*100:0;
-    const sem=d.dashboard.active_semester??d.dashboard.semester??null;
-    const alertCount=reminders && typeof reminders==='object' ? Number(reminders.total_alerts ?? (reminders.overdue_fees?.length||0)+(reminders.fees_due_7_days?.length||0)+(reminders.upcoming_scholarship_deadlines?.length||0)+(reminders.upcoming_goal_deadlines?.length||0)) : 0;
-    const topGroup=(()=>{const totals={};ctx.monthExpenses.forEach(e=>totals[e.group]=(totals[e.group]||0)+numeric(e.amount));const top=Object.entries(totals).sort((a,b)=>b[1]-a[1])[0];return top?top[0]+' ('+safeMoney(top[1])+')':'No spending yet';})();
-    const latestIncome=[...d.income].sort((a,b)=>b.date.localeCompare(a.date))[0];
-    const tile=(href,icon,label,value,sub,pct)=>'<a class="card glance-tile" href="'+href+'"><div class="glance-top"><span>'+label+'</span><span>'+icon+'</span></div><div class="glance-val">'+value+'</div><div class="glance-sub">'+sub+'</div>'+(pct===undefined?'':'<div class="progress-track progress-sm"><div class="progress-fill '+barClass(pct)+'" style="width:'+Math.min(Math.max(pct,0),100)+'%"></div></div>')+'</a>';
-    $('glanceGrid').innerHTML=[
-      tile('expenses.html','💸','Expenses · this month',safeMoney(ctx.spent),ctx.monthExpenses.length+' transactions · top: '+esc(topGroup)),
-      tile('income.html','💵','Income · this month',safeMoney(ctx.monthIncome),latestIncome?'Latest: '+esc(latestIncome.source)+' '+safeMoney(latestIncome.amount):'No income added yet'),
-      tile('semesters.html','📅','Active semester',sem?esc(sem.semester_name||sem.name||'Active'):'None active',sem?safeMoney(sem.total_expenses)+' spent of '+safeMoney(sem.budget)+' budget':'Add an academic semester',sem&&numeric(sem.budget)>0?numeric(sem.total_expenses)/numeric(sem.budget)*100:undefined),
-      tile('college-fees.html','🏫','College fees',safeMoney(pendingTotal)+' pending',safeMoney(paidFees)+' paid of '+safeMoney(totalFees),totalFees>0?feePct:undefined),
-      tile('savings-goals.html','🏦','Savings goals',safeMoney(saved)+' saved',activeGoals.length+' active goal'+(activeGoals.length===1?'':'s')+' · target '+safeMoney(target),target>0?goalPct:undefined),
-      tile('scholarships.html','🎓','Scholarships',safeMoney(received)+' received',scholarships.length+' records · '+safeMoney(awarded)+' awarded',awarded>0?scholarshipPct:undefined),
-      tile('reminders.html','🔔','Reminders',alertCount+' alert'+(alertCount===1?'':'s'),alertCount?'Upcoming or overdue items':'Nothing urgent right now')
+  /* ═══════════════════════════════════════════════════════
+     GLANCE GRID — tries when enough data present
+     ═══════════════════════════════════════════════════════ */
+  function tryRenderGlance() {
+    if (!S.dashboard) return;
+    const dash         = S.dashboard;
+    const fees         = S.fees || [];
+    const goals        = S.goals || [];
+    const scholarships = S.scholarships || [];
+    const reminders    = S.reminders;
+    const mk           = currentMonthKey();
+    const monthExp     = S.expenses ? monthRecords(S.expenses, mk) : [];
+    const monthInc     = S.income   ? monthRecords(S.income,   mk) : [];
+    const spent        = S.expenses ? amountSum(monthExp, 'amount') : numeric(dash.month_expenses ?? 0);
+    const minc         = S.income   ? amountSum(monthInc, 'amount') : numeric(dash.month_income ?? 0);
+
+    const pendingFees  = fees.filter(f => numeric(f.remaining) > 0);
+    const pendingTotal = amountSum(pendingFees, 'remaining');
+    const totalFees    = amountSum(fees, 'total_amount');
+    const paidFees     = amountSum(fees, 'paid');
+    const feePct       = totalFees > 0 ? paidFees / totalFees * 100 : 0;
+    const activeGoals  = goals.filter(g => String(g.status).toLowerCase() === 'active');
+    const saved        = amountSum(activeGoals, 'current_saved_amount');
+    const target       = amountSum(activeGoals, 'target_amount');
+    const goalPct      = target > 0 ? saved / target * 100 : 0;
+    const awarded      = amountSum(scholarships, 'awarded_amount');
+    const received     = amountSum(scholarships, 'total_received');
+    const scholPct     = awarded > 0 ? received / awarded * 100 : 0;
+    const sem          = dash.active_semester ?? dash.semester ?? null;
+    const alertCnt     = reminders && typeof reminders === 'object'
+      ? Number(reminders.total_alerts ?? ((reminders.overdue_fees?.length || 0)
+          + (reminders.fees_due_7_days?.length || 0)
+          + (reminders.upcoming_scholarship_deadlines?.length || 0)
+          + (reminders.upcoming_goal_deadlines?.length || 0)))
+      : 0;
+    const topGroup = (() => {
+      const tots = {};
+      monthExp.forEach(e => tots[e.group] = (tots[e.group] || 0) + numeric(e.amount));
+      const top = Object.entries(tots).sort((a, b) => b[1] - a[1])[0];
+      return top ? top[0] + ' (' + safeMoney(top[1]) + ')' : 'No spending yet';
+    })();
+    const latestInc = S.income
+      ? [...S.income].sort((a, b) => b.date.localeCompare(a.date))[0]
+      : null;
+
+    const tile = (href, icon, label, value, sub, pct) =>
+      '<a class="card glance-tile sec-fade" href="' + href + '">'
+      + '<div class="glance-top"><span>' + label + '</span><span>' + icon + '</span></div>'
+      + '<div class="glance-val">' + value + '</div>'
+      + '<div class="glance-sub">' + sub + '</div>'
+      + (pct === undefined ? ''
+        : '<div class="progress-track progress-sm"><div class="progress-fill ' + barClass(pct)
+        + '" style="width:' + Math.min(Math.max(pct, 0), 100) + '%"></div></div>')
+      + '</a>';
+
+    $('glanceGrid').innerHTML = [
+      tile('expenses.html', '💸', 'Expenses · this month', safeMoney(spent),
+        monthExp.length + ' transactions · top: ' + esc(topGroup)),
+      tile('income.html', '💵', 'Income · this month', safeMoney(minc),
+        latestInc ? 'Latest: ' + esc(latestInc.source) + ' ' + safeMoney(latestInc.amount) : 'No income added yet'),
+      tile('semesters.html', '📅', 'Active semester',
+        sem ? esc(sem.semester_name || sem.name || 'Active') : 'None active',
+        sem ? safeMoney(sem.total_expenses) + ' spent of ' + safeMoney(sem.budget) + ' budget'
+            : 'Add an academic semester',
+        sem && numeric(sem.budget) > 0 ? numeric(sem.total_expenses) / numeric(sem.budget) * 100 : undefined),
+      tile('college-fees.html', '🏫', 'College fees', safeMoney(pendingTotal) + ' pending',
+        safeMoney(paidFees) + ' paid of ' + safeMoney(totalFees), totalFees > 0 ? feePct : undefined),
+      tile('savings-goals.html', '🏦', 'Savings goals', safeMoney(saved) + ' saved',
+        activeGoals.length + ' active goal' + (activeGoals.length === 1 ? '' : 's')
+        + ' · target ' + safeMoney(target), target > 0 ? goalPct : undefined),
+      tile('scholarships.html', '🎓', 'Scholarships', safeMoney(received) + ' received',
+        scholarships.length + ' records · ' + safeMoney(awarded) + ' awarded',
+        awarded > 0 ? scholPct : undefined),
+      tile('reminders.html', '🔔', 'Reminders', alertCnt + ' alert' + (alertCnt === 1 ? '' : 's'),
+        alertCnt ? 'Upcoming or overdue items' : 'Nothing urgent right now')
     ].join('');
   }
 
+  /* ═══════════════════════════════════════════════════════
+     SEMESTER
+     ═══════════════════════════════════════════════════════ */
   function renderSemester(semester) {
-    const el=$('semesterContent');
-    if (!semester) {el.innerHTML='<div class="empty-inline">No active semester. <a href="semesters.html" class="text-primary">Add a semester →</a></div>';return;}
-    const budget=numeric(semester.budget??semester.semester_budget), spent=numeric(semester.total_expenses??semester.spent), pct=budget>0?spent/budget*100:0;
-    el.innerHTML='<div class="d-flex align-center gap-8 mb-8" style="flex-wrap:wrap"><span class="badge badge-success">Active</span><strong>'+esc(semester.semester_name||semester.name||'Active semester')+'</strong><span class="text-muted" style="font-size:.8rem">'+esc(semester.academic_year||'')+'</span></div><div class="text-muted mb-8" style="font-size:.8rem">'+niceDate(semester.start_date)+' → '+niceDate(semester.end_date)+'</div><div class="d-flex" style="justify-content:space-between;gap:8px;margin-bottom:6px;font-size:.84rem"><span>Spent: <strong>'+safeMoney(spent)+'</strong></span><span>Budget: <strong>'+safeMoney(budget)+'</strong></span></div><div class="progress-track"><div class="progress-fill '+barClass(pct)+'" style="width:'+Math.min(Math.max(pct,0),100)+'%"></div></div><div class="data-label" style="margin-top:7px">'+pct.toFixed(1)+'% used · '+safeMoney(budget-spent)+' remaining</div>';
+    const el = $('semesterContent');
+    if (!semester) {
+      el.innerHTML = '<div class="empty-inline">No active semester. '
+        + '<a href="semesters.html" class="text-primary">Add a semester →</a></div>';
+      return;
+    }
+    const budget = numeric(semester.budget ?? semester.semester_budget);
+    const spent  = numeric(semester.total_expenses ?? semester.spent);
+    const pct    = budget > 0 ? spent / budget * 100 : 0;
+    el.innerHTML = '<div class="d-flex align-center gap-8 mb-8" style="flex-wrap:wrap">'
+      + '<span class="badge badge-success">Active</span>'
+      + '<strong>' + esc(semester.semester_name || semester.name || 'Active semester') + '</strong>'
+      + '<span class="text-muted" style="font-size:.8rem">' + esc(semester.academic_year || '') + '</span></div>'
+      + '<div class="text-muted mb-8" style="font-size:.8rem">'
+      + niceDate(semester.start_date) + ' → ' + niceDate(semester.end_date) + '</div>'
+      + '<div class="d-flex" style="justify-content:space-between;gap:8px;margin-bottom:6px;font-size:.84rem">'
+      + '<span>Spent: <strong>' + safeMoney(spent) + '</strong></span>'
+      + '<span>Budget: <strong>' + safeMoney(budget) + '</strong></span></div>'
+      + '<div class="progress-track"><div class="progress-fill ' + barClass(pct)
+      + '" style="width:' + Math.min(Math.max(pct, 0), 100) + '%"></div></div>'
+      + '<div class="data-label" style="margin-top:7px">'
+      + pct.toFixed(1) + '% used · ' + safeMoney(budget - spent) + ' remaining</div>';
   }
 
+  /* ═══════════════════════════════════════════════════════
+     FEES
+     ═══════════════════════════════════════════════════════ */
   function renderFees(fees) {
-    const el=$('upcomingFees');
-    const pending=fees.filter(f=>numeric(f.remaining)>0).sort((a,b)=>(a.due_date||'9999-12-31').localeCompare(b.due_date||'9999-12-31')).slice(0,5);
-    if(!pending.length){el.innerHTML='<div class="empty-inline">Nothing pending 🎉 <a href="college-fees.html">View fee records →</a></div>';return;}
-    el.innerHTML=pending.map(f=>{const days=daysUntil(f.due_date),color=days<0?'#ef4444':days<=7?'#f59e0b':'#22c55e',due=days<0?'Overdue by '+Math.abs(days)+' day'+(Math.abs(days)===1?'':'s'):days===0?'Due today':'Due in '+days+' day'+(days===1?'':'s');return '<div class="fee-row"><span class="fee-dot" style="background:'+color+'"></span><div style="flex:1;min-width:0"><div class="fw-semi" style="font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.fee_title)+'</div><div class="data-label">'+due+' · '+(f.due_date?niceDate(f.due_date):'Date not set')+'</div></div><div style="text-align:right;flex-shrink:0"><div class="fw-bold negative-text">'+safeMoney(f.remaining)+'</div><div class="data-label">remaining</div></div></div>';}).join('');
+    const el = $('upcomingFees');
+    const pending = fees.filter(f => numeric(f.remaining) > 0)
+      .sort((a, b) => (a.due_date || '9999').localeCompare(b.due_date || '9999')).slice(0, 5);
+    if (!pending.length) {
+      el.innerHTML = '<div class="empty-inline">Nothing pending 🎉 '
+        + '<a href="college-fees.html">View fee records →</a></div>';
+      return;
+    }
+    el.innerHTML = pending.map(f => {
+      const days  = daysUntil(f.due_date);
+      const color = days < 0 ? '#ef4444' : days <= 7 ? '#f59e0b' : '#22c55e';
+      const due   = days < 0 ? 'Overdue by ' + Math.abs(days) + ' day' + (Math.abs(days) === 1 ? '' : 's')
+        : days === 0 ? 'Due today' : 'Due in ' + days + ' day' + (days === 1 ? '' : 's');
+      return '<div class="fee-row">'
+        + '<span class="fee-dot" style="background:' + color + '"></span>'
+        + '<div style="flex:1;min-width:0"><div class="fw-semi" style="font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'
+        + esc(f.fee_title) + '</div>'
+        + '<div class="data-label">' + due + ' · ' + (f.due_date ? niceDate(f.due_date) : 'Date not set') + '</div></div>'
+        + '<div style="text-align:right;flex-shrink:0"><div class="fw-bold negative-text">'
+        + safeMoney(f.remaining) + '</div><div class="data-label">remaining</div></div></div>';
+    }).join('');
   }
 
+  /* ═══════════════════════════════════════════════════════
+     GOALS
+     ═══════════════════════════════════════════════════════ */
   function renderGoals(goals) {
-    const el=$('goalGrid'), active=goals.filter(g=>String(g.status).toLowerCase()==='active').slice(0,4);
-    if(!active.length){el.innerHTML='<div class="empty-inline" style="grid-column:1/-1">No active goals. <a href="savings-goals.html">Create one →</a></div>';return;}
-    el.innerHTML=active.map(g=>{const pct=g.target_amount>0?g.current_saved_amount/g.target_amount*100:numeric(g.progress_pct);return '<div class="goal-mini-card"><div class="fw-semi mb-8" style="font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(g.goal_title)+'</div><div class="progress-track progress-sm" style="margin-bottom:7px"><div class="progress-fill '+(pct>=100?'success':pct>=60?'info':'warning')+'" style="width:'+Math.min(Math.max(pct,0),100)+'%"></div></div><div class="d-flex" style="justify-content:space-between;gap:5px;font-size:.75rem"><span class="text-muted">'+safeMoney(g.current_saved_amount)+'</span><strong>'+pct.toFixed(0)+'%</strong><span class="text-muted">'+safeMoney(g.target_amount)+'</span></div></div>';}).join('');
+    const el     = $('goalGrid');
+    const active = goals.filter(g => String(g.status).toLowerCase() === 'active').slice(0, 4);
+    if (!active.length) {
+      el.innerHTML = '<div class="empty-inline" style="grid-column:1/-1">No active goals. '
+        + '<a href="savings-goals.html">Create one →</a></div>';
+      return;
+    }
+    el.innerHTML = active.map(g => {
+      const pct = g.target_amount > 0
+        ? g.current_saved_amount / g.target_amount * 100
+        : numeric(g.progress_pct);
+      return '<div class="goal-mini-card sec-fade">'
+        + '<div class="fw-semi mb-8" style="font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'
+        + esc(g.goal_title) + '</div>'
+        + '<div class="progress-track progress-sm" style="margin-bottom:7px"><div class="progress-fill '
+        + (pct >= 100 ? 'success' : pct >= 60 ? 'info' : 'warning')
+        + '" style="width:' + Math.min(Math.max(pct, 0), 100) + '%"></div></div>'
+        + '<div class="d-flex" style="justify-content:space-between;gap:5px;font-size:.75rem">'
+        + '<span class="text-muted">' + safeMoney(g.current_saved_amount) + '</span>'
+        + '<strong>' + pct.toFixed(0) + '%</strong>'
+        + '<span class="text-muted">' + safeMoney(g.target_amount) + '</span></div></div>';
+    }).join('');
   }
 
+  /* ═══════════════════════════════════════════════════════
+     RECENT EXPENSES & INCOME (clickable rows)
+     ═══════════════════════════════════════════════════════ */
   function renderRecentExpenses(list) {
-    const el=$('recentExpenses');
-    if(!list.length){el.innerHTML='<div class="empty-state" style="padding:28px"><div class="empty-icon">💸</div><h3>No expenses yet</h3><p>Start tracking your spending.</p><a href="expenses.html" class="btn btn-sm btn-secondary">Add expense</a></div>';return;}
-    el.innerHTML='<div class="list-items">'+list.map(e=>'<div class="list-item"><div class="list-item-icon">'+esc(e.icon)+'</div><div class="list-item-body"><div class="list-item-title">'+esc(e.title)+'</div><div class="list-item-sub">'+esc(e.category)+' · '+niceDate(e.date)+'</div></div><div class="list-item-right"><span class="list-item-amount expense">'+safeMoney(e.amount)+'</span></div></div>').join('')+'</div>';
+    const el = $('recentExpenses');
+    if (!list.length) {
+      el.innerHTML = '<div class="empty-state" style="padding:28px"><div class="empty-icon">💸</div>'
+        + '<h3>No expenses yet</h3><p>Start tracking your spending.</p>'
+        + '<a href="expenses.html" class="btn btn-sm btn-secondary">Add expense</a></div>';
+      return;
+    }
+    el.innerHTML = '<div class="list-items sec-fade">'
+      + list.map(e =>
+        '<a class="list-item" href="/pages/expenses.html" title="View all expenses" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:0">'
+        + '<div class="list-item-icon">' + esc(e.icon) + '</div>'
+        + '<div class="list-item-body">'
+        + '<div class="list-item-title">' + esc(e.title) + '</div>'
+        + '<div class="list-item-sub">' + esc(e.category) + ' · ' + niceDate(e.date) + '</div></div>'
+        + '<div class="list-item-right"><span class="list-item-amount expense">'
+        + safeMoney(e.amount) + '</span></div></a>'
+      ).join('')
+      + '</div>';
   }
+
   function renderRecentIncome(list) {
-    const el=$('recentIncome');
-    if(!list.length){el.innerHTML='<div class="empty-state" style="padding:28px"><div class="empty-icon">💵</div><h3>No income yet</h3><p>Add pocket money or other income.</p><a href="income.html" class="btn btn-sm btn-secondary">Add income</a></div>';return;}
-    el.innerHTML='<div class="list-items">'+list.map(i=>'<div class="list-item"><div class="list-item-icon">💵</div><div class="list-item-body"><div class="list-item-title">'+esc(i.source)+'</div><div class="list-item-sub">'+niceDate(i.date)+'</div></div><div class="list-item-right"><span class="list-item-amount income">+'+safeMoney(i.amount)+'</span></div></div>').join('')+'</div>';
+    const el = $('recentIncome');
+    if (!list.length) {
+      el.innerHTML = '<div class="empty-state" style="padding:28px"><div class="empty-icon">💵</div>'
+        + '<h3>No income yet</h3><p>Add pocket money or other income.</p>'
+        + '<a href="income.html" class="btn btn-sm btn-secondary">Add income</a></div>';
+      return;
+    }
+    el.innerHTML = '<div class="list-items sec-fade">'
+      + list.map(i =>
+        '<a class="list-item" href="/pages/income.html" title="View all income" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:0">'
+        + '<div class="list-item-icon">💵</div>'
+        + '<div class="list-item-body">'
+        + '<div class="list-item-title">' + esc(i.source) + '</div>'
+        + '<div class="list-item-sub">' + niceDate(i.date) + '</div></div>'
+        + '<div class="list-item-right"><span class="list-item-amount income">+'
+        + safeMoney(i.amount) + '</span></div></a>'
+      ).join('')
+      + '</div>';
   }
 
-  function renderCharts() {
-    if(!dashboardData || typeof Chart==='undefined') return;
-    const expenses=dashboardData.expenses, income=dashboardData.income, month=currentMonthKey();
-    const text=getComputedStyle(document.documentElement).getPropertyValue('--muted').trim()||'#64748b';
-    const grid=getComputedStyle(document.documentElement).getPropertyValue('--border').trim()||'#e5e7eb';
-    const surface=getComputedStyle(document.documentElement).getPropertyValue('--surface').trim()||'#ffffff';
-    const totals={};
-    monthRecords(expenses,month).forEach(e=>{const key=e.group||'Other';totals[key]=(totals[key]||0)+numeric(e.amount);});
-    const labels=Object.keys(totals);
-    $('groupChartEmpty').hidden=labels.length>0; $('groupChartWrap').hidden=labels.length===0;
-    if(charts.group){charts.group.destroy();charts.group=null;}
-    if(labels.length){charts.group=new Chart($('groupChart').getContext('2d'),{type:'doughnut',data:{labels,datasets:[{data:labels.map(k=>totals[k]),backgroundColor:chartColors.slice(0,labels.length),borderWidth:2,borderColor:surface}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{padding:10,font:{size:11},color:text}}}}});}
-
-    const months=[];const now=new Date();
-    for(let i=5;i>=0;i--){const dt=new Date(now.getFullYear(),now.getMonth()-i,1);months.push({key:dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0'),label:dt.toLocaleDateString('en-IN',{month:'short',year:'2-digit'})});}
-    const byMonth=list=>months.map(m=>amountSum(list.filter(r=>r.date&&r.date.slice(0,7)===m.key),'amount'));
-    const out=byMonth(expenses),inc=byMonth(income),hasData=out.some(v=>v>0)||inc.some(v=>v>0);
-    $('trendChartEmpty').hidden=hasData;$('trendChartWrap').hidden=!hasData;
-    if(charts.trend){charts.trend.destroy();charts.trend=null;}
-    if(hasData){charts.trend=new Chart($('trendChart').getContext('2d'),{type:'bar',data:{labels:months.map(m=>m.label),datasets:[{label:'Income',data:inc,backgroundColor:'#22c55e',borderRadius:4},{label:'Expenses',data:out,backgroundColor:'#6366f1',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:text,font:{size:11}}}},scales:{x:{ticks:{color:text},grid:{display:false}},y:{beginAtZero:true,ticks:{color:text,callback:v=>'₹'+Number(v).toLocaleString('en-IN')},grid:{color:grid}}}}});}
+  /* ═══════════════════════════════════════════════════════
+     CHARTS
+     ═══════════════════════════════════════════════════════ */
+  function tryRenderCharts() {
+    if (S.expenses === null || S.income === null) return;
+    renderCharts(S.expenses, S.income);
   }
 
-  async function submitQuickExpense(event) {
-    event.preventDefault();
-    const button=$('qaBtn'),errorBox=$('qaError');errorBox.hidden=true;
-    const title=$('qaTitle').value.trim(),amount=Number($('qaAmount').value),category_id=Number($('qaCategory').value),date=$('qaDate').value;
-    if(!title||!Number.isFinite(amount)||amount<=0||!Number.isInteger(category_id)||category_id<=0||!date){errorBox.textContent='Please enter a title, a valid amount, category and date.';errorBox.hidden=false;return;}
-    button.disabled=true;button.textContent='Adding…';
-    try {
-      await API_CLIENT.post('/expenses',{title,amount,category_id,date});
-      if(typeof showToast==='function')showToast('Expense added successfully!','success');
-      $('quickAddForm').reset();$('qaDate').value=localTodayISO();
-      await loadAll();
-    } catch(error) {
-      console.error('Quick add expense failed:',error);
-      errorBox.textContent=error?.message||'Unable to add expense. Please try the Expenses page.';errorBox.hidden=false;
-    } finally {button.disabled=false;button.textContent='Add';}
-  }
+  function renderCharts(expenses, income) {
+    if (typeof Chart === 'undefined') return;
+    const mk      = currentMonthKey();
+    const text    = getComputedStyle(document.documentElement).getPropertyValue('--muted').trim() || '#64748b';
+    const grid    = getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || '#e5e7eb';
+    const surface = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#fff';
 
-  async function start() {
-    try {
-      const user=await requireAuth();
-      if(user && user.name) $('userName').textContent=String(user.name).trim().split(/\s+/)[0];
-      if(typeof buildNav==='function') buildNav('dashboard',user);
-      setDateLabels();
-      $('quickAddForm').addEventListener('submit',submitQuickExpense);
-      // Expense Calendar Event Listeners
+    // Doughnut — spending by group this month
+    const totals = {};
+    monthRecords(expenses, mk).forEach(e => {
+      const k = e.group || 'Other';
+      totals[k] = (totals[k] || 0) + numeric(e.amount);
+    });
+    const labels = Object.keys(totals);
+    $('groupChartEmpty').hidden = labels.length > 0;
+    $('groupChartWrap').hidden  = labels.length === 0;
+    if (charts.group) { charts.group.destroy(); charts.group = null; }
+    if (labels.length) {
+      charts.group = new Chart($('groupChart').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+          labels,
+          datasets: [{ data: labels.map(k => totals[k]),
+            backgroundColor: chartColors.slice(0, labels.length),
+            borderWidth: 2, borderColor: surface }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { padding: 10, font: { size: 11 }, color: text } },
+            tooltip: { callbacks: { label: ctx =>
+              ' ' + ctx.label + ': ' + safeMoney(ctx.parsed) } }
+          },
+          onClick: (_evt, elements) => {
+            if (elements.length) window.location.href = '/pages/expenses.html';
+          }
+        }
+      });
+    }
 
-$("expenseCalendarPrev").addEventListener("click", () => {
-  moveExpenseCalendar(-1);
-});
-
-$("expenseCalendarNext").addEventListener("click", () => {
-  moveExpenseCalendar(1);
-});
-
-$("expenseCalendarToday").addEventListener("click", () => {
-  resetExpenseCalendarToday();
-});
-
-$("expenseCalendarGrid").addEventListener("click", event => {
-  const button = event.target.closest("[data-calendar-date]");
-
-  if (!button) return;
-
-  selectedCalendarDate = button.dataset.calendarDate;
-
-  renderExpenseCalendar(dashboardData?.expenses || []);
-});
-      await Promise.all([loadCategories(),loadAll()]);
-    } catch(error) {
-      console.error('Dashboard startup failed:',error);
-      const warning=$('dashboardLoadWarning');warning.textContent=error?.message||'Dashboard could not start. Please sign in again.';warning.hidden=false;
-      $('glanceGrid').innerHTML='<div class="empty-inline">Dashboard data could not be loaded. Please refresh or sign in again.</div>';
+    // Bar — income vs expenses last 6 months
+    const months = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const dt = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({ key: dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0'),
+        label: dt.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' }) });
+    }
+    const byMonth = arr => months.map(m => amountSum(arr.filter(r => r.date && r.date.slice(0, 7) === m.key), 'amount'));
+    const out = byMonth(expenses);
+    const inc = byMonth(income);
+    const hasData = out.some(v => v > 0) || inc.some(v => v > 0);
+    $('trendChartEmpty').hidden = hasData;
+    $('trendChartWrap').hidden  = !hasData;
+    if (charts.trend) { charts.trend.destroy(); charts.trend = null; }
+    if (hasData) {
+      charts.trend = new Chart($('trendChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: months.map(m => m.label),
+          datasets: [
+            { label: 'Income',   data: inc, backgroundColor: '#22c55e', borderRadius: 4 },
+            { label: 'Expenses', data: out, backgroundColor: '#6366f1', borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { color: text, font: { size: 11 } } },
+            tooltip: { callbacks: { label: ctx =>
+              ' ' + ctx.dataset.label + ': ' + safeMoney(ctx.parsed.y) } }
+          },
+          scales: {
+            x: { ticks: { color: text }, grid: { display: false } },
+            y: { beginAtZero: true,
+              ticks: { color: text, callback: v => '₹' + Number(v).toLocaleString('en-IN') },
+              grid: { color: grid } }
+          }
+        }
+      });
     }
   }
 
-  // Redraw chart text/legend colours after the existing theme toggle changes data-theme.
-  if(typeof MutationObserver!=='undefined') new MutationObserver(()=>renderCharts()).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+  /* ═══════════════════════════════════════════════════════
+     CATEGORIES DROPDOWN
+     ═══════════════════════════════════════════════════════ */
+  function populateCategoryDropdown(categories) {
+    const select = $('qaCategory');
+    select.innerHTML = '<option value="">Select category…</option>';
+    const groups = {};
+    categories.forEach(c => (groups[c.group] ||= []).push(c));
+    Object.keys(groups).sort((a, b) => a.localeCompare(b)).forEach(grp => {
+      const og = document.createElement('optgroup');
+      og.label = grp;
+      groups[grp].sort((a, b) => a.name.localeCompare(b.name)).forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = (c.icon || '📌') + ' ' + c.name;
+        og.appendChild(opt);
+      });
+      select.appendChild(og);
+    });
+    if (!categories.length) select.innerHTML = '<option value="">No categories available</option>';
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     PREMIUM EXPENSE CALENDAR
+     ═══════════════════════════════════════════════════════ */
+  function renderCalendar() {
+    const records = Array.isArray(S.expenses) ? S.expenses : [];
+    const year    = calMonth.getFullYear();
+    const month   = calMonth.getMonth();
+    const monthKey = year + '-' + String(month + 1).padStart(2, '0');
+
+    const monthRecs = records.filter(e => e.date && e.date.slice(0, 7) === monthKey);
+    const monthlyTotal = amountSum(monthRecs, 'amount');
+    const txCount = monthRecs.length;
+
+    // Build daily totals map
+    const dailyMap = new Map();
+    monthRecs.forEach(e => {
+      const d = e.date;
+      const ex = dailyMap.get(d) || { total: 0, count: 0, records: [] };
+      ex.total += numeric(e.amount);
+      ex.count += 1;
+      ex.records.push(e);
+      dailyMap.set(d, ex);
+    });
+
+    // Find peak day
+    let peakKey = null; let peakAmt = 0;
+    dailyMap.forEach((v, k) => { if (v.total > peakAmt) { peakAmt = v.total; peakKey = k; } });
+
+    // Spending intensity thresholds (based on avg)
+    const activeDays = dailyMap.size || 1;
+    const avgDaily   = monthlyTotal / activeDays;
+    const thMed  = avgDaily * 0.9;
+    const thHigh = avgDaily * 1.5;
+
+    // Update month name and stats
+    $('expenseCalendarMonth').textContent = calMonth.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+    $('calendarMonthlyTotal').textContent = safeMoney(monthlyTotal);
+    $('calendarMonthlyCount').textContent = txCount.toLocaleString('en-IN');
+    $('calDailyAvg').textContent = txCount > 0 ? safeMoney(monthlyTotal / txCount) : '₹0';
+    if (peakKey) {
+      const [py, pm, pd] = peakKey.split('-').map(Number);
+      $('calPeakDay').textContent = new Date(py, pm - 1, pd)
+        .toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+        + ' (' + safeMoney(peakAmt) + ')';
+    } else {
+      $('calPeakDay').textContent = '—';
+    }
+
+    // Build grid HTML
+    const firstDay  = new Date(year, month, 1).getDay();
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    const todayISO  = localTodayISO();
+
+    let html = '';
+    // Empty cells
+    for (let i = 0; i < firstDay; i++) html += '<div class="cal-day cal-empty"></div>';
+
+    for (let day = 1; day <= totalDays; day++) {
+      const dk = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+      const dData = dailyMap.get(dk);
+      const isToday    = dk === todayISO;
+      const isSelected = dk === calSelected;
+      const isPeak     = dk === peakKey && peakAmt > 0;
+
+      let cls = 'cal-day';
+      if (isToday)    cls += ' cal-today';
+      if (isSelected) cls += ' cal-selected';
+      if (isPeak)     cls += ' cal-peak';
+      if (dData) {
+        cls += ' has-spend';
+        if (dData.total > thHigh)   cls += ' spend-high';
+        else if (dData.total > thMed) cls += ' spend-med';
+        else                          cls += ' spend-low';
+      }
+
+      const amtStr = dData
+        ? '₹' + dData.total.toLocaleString('en-IN', { maximumFractionDigits: 0 })
+        : '';
+      const ariaLbl = dk + (dData ? ', ' + dData.count + ' expenses, ' + safeMoney(dData.total) : ', no expenses');
+
+      html += `<button type="button" class="${cls}" data-cal-date="${dk}"
+        aria-pressed="${isSelected}" aria-label="${ariaLbl}">
+        <span class="cal-day-num">${day}</span>
+        <span class="cal-day-dot"></span>
+        <span class="cal-day-amt">${amtStr}</span>
+      </button>`;
+    }
+
+    $('expenseCalendarGrid').innerHTML = html;
+    renderCalendarDay();
+  }
+
+  function renderCalendarDay() {
+    const records  = Array.isArray(S.expenses) ? S.expenses : [];
+    const selected = records.filter(e => e.date === calSelected);
+    const total    = amountSum(selected, 'amount');
+
+    const [sy, sm, sd] = calSelected.split('-').map(Number);
+    $('calendarSelectedDate').textContent =
+      new Date(sy, sm - 1, sd).toLocaleDateString('en-IN',
+        { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    $('calendarDailyTotal').textContent = safeMoney(total);
+    $('calendarDailyCount').textContent = selected.length.toLocaleString('en-IN');
+
+    if (!selected.length) {
+      $('calendarDailyExpenses').innerHTML =
+        '<div class="cal-no-txns"><div class="cal-no-txns-icon">📭</div>'
+        + '<div>No expenses recorded on this date.</div></div>';
+      return;
+    }
+    $('calendarDailyExpenses').innerHTML =
+      '<div class="cal-txns sec-fade">'
+      + selected.map(e =>
+        '<div class="cal-txn">'
+        + '<div class="cal-txn-left">'
+        + '<div class="cal-txn-title">' + esc(e.icon || '💳') + ' ' + esc(e.title) + '</div>'
+        + '<span class="cal-txn-badge">' + esc(e.category || e.group || 'Other') + '</span>'
+        + '</div>'
+        + '<div class="cal-txn-amt">' + safeMoney(e.amount) + '</div>'
+        + '</div>'
+      ).join('')
+      + '</div>';
+  }
+
+  function calMoveMonth(dir) {
+    calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + dir, 1);
+    // Keep selected day clamped to new month
+    const lastDay = new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 0).getDate();
+    const oldDay  = Number(calSelected.slice(-2)) || 1;
+    const newDay  = Math.min(oldDay, lastDay);
+    calSelected   = calMonth.getFullYear() + '-'
+      + String(calMonth.getMonth() + 1).padStart(2, '0') + '-'
+      + String(newDay).padStart(2, '0');
+    renderCalendar();
+  }
+
+  function calResetToday() {
+    calMonth    = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    calSelected = localTodayISO();
+    renderCalendar();
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     QUICK ADD EXPENSE — partial refresh only
+     ═══════════════════════════════════════════════════════ */
+  async function submitQuickExpense(event) {
+    event.preventDefault();
+    const btn      = $('qaBtn');
+    const errorBox = $('qaError');
+    errorBox.hidden = true;
+
+    const title       = $('qaTitle').value.trim();
+    const amount      = Number($('qaAmount').value);
+    const category_id = Number($('qaCategory').value);
+    const date        = $('qaDate').value;
+
+    if (!title || !Number.isFinite(amount) || amount <= 0
+        || !Number.isInteger(category_id) || category_id <= 0 || !date) {
+      errorBox.textContent = 'Please enter a title, valid amount, category and date.';
+      errorBox.hidden = false;
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Adding…';
+
+    try {
+      await API_CLIENT.post('/expenses', { title, amount, category_id, date });
+      if (typeof showToast === 'function') showToast('Expense added!', 'success');
+      $('quickAddForm').reset();
+      $('qaDate').value = localTodayISO();
+
+      // Targeted refresh — only invalidate what changed
+      invalidate('/expenses', '/dashboard');
+
+      // Reload in parallel, update affected sections
+      const [freshExpRaw, freshDashRaw] = await Promise.all([
+        cachedGet('/expenses', TTL.tx).catch(() => null),
+        cachedGet('/dashboard', TTL.dash).catch(() => null)
+      ]);
+
+      if (freshExpRaw) {
+        S.expenses = arrayFrom(freshExpRaw, ['expenses','items','data','results'])
+          .map(normalizeExpense);
+        const mk = currentMonthKey();
+        const sorted = [...S.expenses].sort((a, b) => b.date.localeCompare(a.date));
+        renderRecentExpenses(sorted.slice(0, 5));
+        renderCalendar();
+        tryRenderCharts();
+        tryRenderBudget();
+      }
+      if (freshDashRaw) {
+        const d = freshDashRaw.dashboard ?? freshDashRaw.data ?? freshDashRaw;
+        S.dashboard = d;
+        renderStatCards(d);
+        tryRenderBudget();
+        tryRenderGlance();
+      }
+    } catch (error) {
+      console.error('Quick add failed:', error);
+      errorBox.textContent = error?.message || 'Unable to add expense. Please try the Expenses page.';
+      errorBox.hidden = false;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Add';
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     DATE LABELS
+     ═══════════════════════════════════════════════════════ */
+  function setDateLabels() {
+    const now = new Date();
+    $('dateLabel').textContent = now.toLocaleDateString('en-IN',
+      { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    $('monthLabel2').textContent = now.toLocaleDateString('en-IN',
+      { month: 'long', year: 'numeric' });
+    $('qaDate').value = localTodayISO();
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     PROGRESSIVE LOADER — MAIN ENTRY
+     ═══════════════════════════════════════════════════════ */
+  async function start() {
+    // ── Stage 1: auth (must complete before anything else) ──
+    let user;
+    try {
+      user = await requireAuth();
+    } catch (e) {
+      return; // requireAuth already redirects
+    }
+    if (user?.name) $('userName').textContent = String(user.name).trim().split(/\s+/)[0];
+    if (typeof buildNav === 'function') buildNav('dashboard', user);
+    setDateLabels();
+
+    // Wire up events
+    $('quickAddForm').addEventListener('submit', submitQuickExpense);
+    $('expenseCalendarPrev').addEventListener('click', () => calMoveMonth(-1));
+    $('expenseCalendarNext').addEventListener('click', () => calMoveMonth(1));
+    $('expenseCalendarToday').addEventListener('click', calResetToday);
+    $('expenseCalendarGrid').addEventListener('click', ev => {
+      const btn = ev.target.closest('[data-cal-date]');
+      if (!btn) return;
+      calSelected = btn.dataset.calDate;
+      renderCalendar();
+    });
+
+    // ── Stages 2-4: fire ALL independently in parallel ──
+    // Each section renders the moment ITS data arrives — no section waits for another.
+
+    // Core aggregates (fastest — single backend round-trip)
+    loadSection('/dashboard', TTL.dash, raw => {
+      const d = raw?.dashboard ?? raw?.data ?? raw ?? {};
+      S.dashboard = d;
+      renderStatCards(d);
+      renderSemester(d.active_semester ?? d.semester ?? null);
+      tryRenderBudget();
+      tryRenderGlance();
+    }, () => {
+      $('dashboardLoadWarning').textContent =
+        'Could not load core financial summary. Some values may be incomplete. '
+        + 'Check your network connection or backend status.';
+      $('dashboardLoadWarning').hidden = false;
+    });
+
+    // Budget amount
+    loadSection('/budget', TTL.dash, raw => {
+      S.budget = raw?.budget ?? raw?.data ?? raw ?? {};
+      tryRenderBudget();
+    });
+
+    // Category limits
+    loadSection('/group-budgets', TTL.dash, raw => {
+      S.groupBudgets = normalizeGroupBudgets(raw);
+      tryRenderBudget();
+    });
+
+    // Expenses — feeds calendar, recent list, charts, budget category bars
+    loadSection('/expenses', TTL.tx, raw => {
+      S.expenses = arrayFrom(raw, ['expenses','items','data','results']).map(normalizeExpense);
+      const sorted = [...S.expenses].sort((a, b) => b.date.localeCompare(a.date));
+      renderRecentExpenses(sorted.slice(0, 5));
+      renderCalendar();
+      tryRenderCharts();
+      tryRenderBudget();
+      tryRenderGlance();
+    }, () => sectionError('recentExpenses', () => {
+      invalidate('/expenses');
+      loadSection('/expenses', TTL.tx, raw => {
+        S.expenses = arrayFrom(raw).map(normalizeExpense);
+        renderRecentExpenses([...S.expenses].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5));
+        renderCalendar(); tryRenderCharts(); tryRenderBudget();
+      });
+    }, 'Could not load your expenses.'));
+
+    // Income — feeds charts, recent income, glance
+    loadSection('/income', TTL.tx, raw => {
+      S.income = arrayFrom(raw, ['income','items','data','results','incomes']).map(normalizeIncome);
+      renderRecentIncome([...S.income].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5));
+      tryRenderCharts();
+      tryRenderGlance();
+    }, () => sectionError('recentIncome', () => {
+      invalidate('/income');
+      loadSection('/income', TTL.tx, raw => {
+        S.income = arrayFrom(raw).map(normalizeIncome);
+        renderRecentIncome([...S.income].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5));
+        tryRenderCharts();
+      });
+    }, 'Could not load your income.'));
+
+    // Categories for Quick Add dropdown
+    loadSection('/categories', TTL.cat, raw => {
+      S.categories = arrayFrom(raw, ['categories','items','data','results']).map(c => ({
+        id: c.id,
+        name: String(c.name ?? c.category_name ?? 'Category'),
+        group: String(c.group ?? c.grp ?? c.category_group ?? c.group_name ?? 'Other'),
+        icon: c.icon || '📌'
+      })).filter(c => c.id != null);
+      populateCategoryDropdown(S.categories);
+    }, () => { $('qaCategory').innerHTML = '<option value="">Categories unavailable</option>'; });
+
+    // ── Optional modules (non-blocking, section-level errors) ──
+    loadSection('/fees', TTL.opt, raw => {
+      S.fees = arrayFrom(raw, ['fees','items','data','results']).map(normalizeFee);
+      renderFees(S.fees);
+      tryRenderGlance();
+    }, () => sectionError('upcomingFees', null, 'Could not load college fees.'));
+
+    loadSection('/savings-goals', TTL.opt, raw => {
+      S.goals = arrayFrom(raw, ['goals','items','data','results']).map(normalizeGoal);
+      renderGoals(S.goals);
+      tryRenderGlance();
+    }, () => sectionError('goalGrid', null, 'Could not load savings goals.'));
+
+    loadSection('/scholarships', TTL.opt, raw => {
+      S.scholarships = arrayFrom(raw, ['scholarships','items','data','results']).map(normalizeScholarship);
+      tryRenderGlance();
+    });
+
+    loadSection('/reminders', TTL.opt, raw => {
+      S.reminders = raw?.reminders ?? raw?.data ?? raw ?? null;
+      renderAlerts(S.reminders);
+      tryRenderGlance();
+    });
+  }
+
+  // Redraw chart colours on theme toggle
+  if (typeof MutationObserver !== 'undefined') {
+    new MutationObserver(() => { if (S.expenses && S.income) renderCharts(S.expenses, S.income); })
+      .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  }
+
   start();
 })();
 </script>

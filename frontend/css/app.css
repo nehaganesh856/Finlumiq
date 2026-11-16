@@ -1009,3 +1009,70 @@ select.form-control {
 .mt-8   { margin-top: 8px; }
 .mt-16  { margin-top: 16px; }
 .w-full { width: 100%; }
+
+
+/* ================================================================
+   Dashboard enhancements — skeletons, calendar, progressive UI
+   ================================================================ */
+
+/* Skeleton shimmer */
+@keyframes skshimmer {
+  0%   { background-position: -800px 0 }
+  100% { background-position: 800px 0 }
+}
+.skel {
+  background: linear-gradient(90deg,
+    var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
+  background-size: 1600px 100%;
+  animation: skshimmer 1.6s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+  display: block;
+}
+.skel-line        { height: 13px; margin: 7px 0; }
+.skel-line.h-xl   { height: 32px; }
+.skel-line.h-lg   { height: 22px; }
+.skel-line.h-sm   { height: 10px; }
+.skel-line.w-80   { width: 80%; }
+.skel-line.w-60   { width: 60%; }
+.skel-line.w-40   { width: 40%; }
+.skel-line.w-30   { width: 30%; }
+.skel-tile        { height: 88px; border-radius: var(--radius); }
+
+/* Section fade-in */
+.sec-fade { animation: secIn .28s ease both; }
+@keyframes secIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Section error state */
+.sec-err {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 6px; padding: 20px; text-align: center;
+  color: var(--muted); font-size: .84rem;
+}
+.sec-err-icon { font-size: 1.5rem; }
+.btn-retry {
+  padding: 5px 14px; border: 1px solid var(--border);
+  border-radius: var(--radius-full); background: var(--surface-2);
+  cursor: pointer; font-size: .78rem; color: var(--text);
+  transition: .15s; font-family: inherit;
+}
+.btn-retry:hover { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
+
+/* Stat card hover */
+.stat-card {
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.stat-card:hover  { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+.stat-card:active { transform: translateY(-1px); }
+
+/* List item clickable */
+.list-item {
+  cursor: pointer; border-radius: var(--radius-sm);
+  transition: background .12s;
+}
+.list-item:hover { background: var(--surface-2); }
+.list-item-amount.income  { color: var(--success) !important; font-weight: 800; }
+.list-item-amount.expense { color: var(--danger)  !important; font-weight: 800; }
