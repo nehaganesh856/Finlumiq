@@ -296,7 +296,14 @@ def register():
     if len(password) < 8 or len(password) > 128:
         return jsonify({"error": "Password must be 8 to 128 characters"}), 400
 
-    mail_configured = mailer.is_configured()
+    // Enforce mail configuration – abort if not set
+mail_configured = mailer.is_configured()
+if not mail_configured:
+    logger.error("Email provider not configured – aborting registration")
+    return jsonify({
+        "error": "Email service not configured. Contact support.",
+        "mail_configured": False
+    }), 500
 
     db = get_db()
     try:
@@ -312,7 +319,8 @@ def register():
         try:
             if has_verified_col:
                 # Auto-verify if mail not configured — no point gating login on email
-                verified_val = 0 if mail_configured else 1
+                # When email verification is required, always start as unverified
+                verified_val = 0
                 cur.execute(
                     "INSERT INTO users (name, email, password_hash, email_verified) VALUES (%s,%s,%s,%s)",
                     (name, email, generate_password_hash(password), verified_val),
@@ -341,7 +349,18 @@ def register():
         db.close()
 
     # If mail not configured OR token table missing — log user in immediately
-    if not mail_configured or raw_token is None:
+    # Abort registration if email cannot be sent or token could not be generated
+        if not mail_configured:
+            return jsonify({
+                "error": "Email service not configured – cannot send verification email.",
+                "mail_configured": False
+            }), 500
+        if raw_token is None:
+            # Token generation failed (e.g., missing auth_tokens table)
+            return jsonify({
+                "error": "Failed to generate verification token. Contact support.",
+                "mail_configured": True
+            }), 500
         session.clear()
         session.permanent = True
         session["user_id"] = user_id

@@ -26,6 +26,28 @@ SMTP_PORT     = 587
 
 
 def _mail_configured() -> bool:
+    """Return True only if the minimal SMTP credentials are present.
+    For Gmail the only required variables are ``MAIL_USERNAME`` and ``MAIL_PASSWORD``.
+    ``MAIL_SERVER`` and ``MAIL_PORT`` are optional – they default to Gmail's
+    ``smtp.gmail.com`` and ``587`` (STARTTLS).  ``MAIL_DEFAULT_SENDER`` falls back
+    to the username if not set.
+    """
+    # Username & password are mandatory for any provider.
+    if not (os.getenv("MAIL_USERNAME") and os.getenv("MAIL_PASSWORD")):
+        return False
+    # Server and port are optional – default to Gmail values.
+    return True
+    """Return True only if all required SMTP configuration variables are present.
+    Required variables: MAIL_SERVER, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD, MAIL_DEFAULT_SENDER.
+    """
+    required = [
+        os.getenv("MAIL_SERVER"),
+        os.getenv("MAIL_PORT"),
+        os.getenv("MAIL_USERNAME"),
+        os.getenv("MAIL_PASSWORD"),
+        os.getenv("MAIL_DEFAULT_SENDER"),
+    ]
+    return all(bool(v) for v in required)
     return bool(MAIL_USERNAME and MAIL_PASSWORD)
 
 
