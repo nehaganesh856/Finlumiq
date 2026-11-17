@@ -78,7 +78,18 @@ app.config.update(
 )
 
 
-CORS(app, origins=[FRONTEND_ORIGIN], supports_credentials=True)
+# Configure CORS to allow both old and new Netlify origins, plus localhost for development
+# FRONTEND_ORIGIN may contain a single origin (e.g., http://127.0.0.1:8000). We also accept the two Netlify domains.
+allowed_origins = [FRONTEND_ORIGIN]
+# Add legacy Netlify URL if not already present
+legacy_origin = "https://finlumiq.netlify.app"
+new_origin = "https://sage-sundae-1dfe3a.netlify.app"
+if legacy_origin not in allowed_origins:
+    allowed_origins.append(legacy_origin)
+if new_origin not in allowed_origins:
+    allowed_origins.append(new_origin)
+# Apply CORS with the assembled list
+CORS(app, origins=allowed_origins, supports_credentials=True)
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 

@@ -39,7 +39,13 @@ async function apiPost(path, body) {
       body: JSON.stringify(body),
     });
   } catch {
-    throw new Error("Cannot reach the server. Make sure the Flask backend is running on port 5000.");
+    // Improved error handling for network/CORS issues
+if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
+  throw new Error('Cannot connect to the server. Please check your internet connection or try again later.');
+} else {
+  // Preserve original error for debugging
+  throw err;
+}
   }
   const data = await res.json().catch(() => ({}));
   if (res.status === 503) {

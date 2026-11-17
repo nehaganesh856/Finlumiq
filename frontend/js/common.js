@@ -14,7 +14,14 @@ async function request(path, options = {}) {
       ...options
     });
   } catch {
-    throw new Error("Cannot reach the server. Is the backend running on port 5000?");
+    // Improved error handling: differentiate network/CORS errors
+if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
+  // Likely a network/CORS issue
+  throw new Error('Cannot connect to the server. Please check your internet connection or try again later.');
+} else {
+  // Preserve original error for debugging
+  throw err;
+}
   }
   let body = null;
   try { body = await response.json(); } catch { /* no body */ }
