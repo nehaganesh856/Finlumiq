@@ -198,7 +198,10 @@ def service_unavailable(e):
 
 @app.errorhandler(500)
 def internal_error(e):
-    logger.error("Unhandled error: %s", e)
+    # Log the full traceback so the original exception is visible in Render logs.
+    # The __cause__ or original_exception holds the real Python error.
+    original = getattr(e, "original_exception", None) or e
+    logger.exception("Unhandled 500 error (original: %s: %s)", type(original).__name__, original)
     return jsonify({"error": "An internal server error occurred. Check the backend terminal."}), 500
 
 
