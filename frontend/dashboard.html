@@ -956,7 +956,7 @@
     const el = $('semesterContent');
     if (!semester) {
       el.innerHTML = '<div class="empty-inline">No active semester. '
-        + '<a href="semesters.html" class="text-primary">Add a semester →</a></div>';
+        + '<a href="/pages/semesters.html" class="text-primary">Add a semester →</a></div>';
       return;
     }
     const budget = numeric(semester.budget ?? semester.semester_budget);
@@ -986,7 +986,7 @@
       .sort((a, b) => (a.due_date || '9999').localeCompare(b.due_date || '9999')).slice(0, 5);
     if (!pending.length) {
       el.innerHTML = '<div class="empty-inline">Nothing pending 🎉 '
-        + '<a href="college-fees.html">View fee records →</a></div>';
+        + '<a href="/pages/college-fees.html">View fee records →</a></div>';
       return;
     }
     el.innerHTML = pending.map(f => {
@@ -1012,7 +1012,7 @@
     const active = goals.filter(g => String(g.status).toLowerCase() === 'active').slice(0, 4);
     if (!active.length) {
       el.innerHTML = '<div class="empty-inline" style="grid-column:1/-1">No active goals. '
-        + '<a href="savings-goals.html">Create one →</a></div>';
+        + '<a href="/pages/savings-goals.html">Create one →</a></div>';
       return;
     }
     el.innerHTML = active.map(g => {
@@ -1040,7 +1040,7 @@
     if (!list.length) {
       el.innerHTML = '<div class="empty-state" style="padding:28px"><div class="empty-icon">💸</div>'
         + '<h3>No expenses yet</h3><p>Start tracking your spending.</p>'
-        + '<a href="expenses.html" class="btn btn-sm btn-secondary">Add expense</a></div>';
+        + '<a href="/pages/expenses.html" class="btn btn-sm btn-secondary">Add expense</a></div>';
       return;
     }
     el.innerHTML = '<div class="list-items sec-fade">'
@@ -1061,7 +1061,7 @@
     if (!list.length) {
       el.innerHTML = '<div class="empty-state" style="padding:28px"><div class="empty-icon">💵</div>'
         + '<h3>No income yet</h3><p>Add pocket money or other income.</p>'
-        + '<a href="income.html" class="btn btn-sm btn-secondary">Add income</a></div>';
+        + '<a href="/pages/income.html" class="btn btn-sm btn-secondary">Add income</a></div>';
       return;
     }
     el.innerHTML = '<div class="list-items sec-fade">'
